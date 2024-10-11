@@ -18,7 +18,9 @@ export default function Selfie(){
           <div 
           className="w-screen h-screen border-red-500 bg-[#222222] border-2 flex justify-center items-center cursor-pointer relative"
           >
-                hello
+            <div>
+                
+            </div>
           </div>
         )}
         </AnimatePresence>
