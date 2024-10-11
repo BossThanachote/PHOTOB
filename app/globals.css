@@ -2,26 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+html{
+  @apply bg-[#F7F7F7]
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.font-dream-sparks-400{
+  font-family: var(--font-dream-sparks);
+  font-weight: 400;
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+.font-dream-sparks-700{
+  font-family: var(--font-dream-sparks);
+  font-weight: 700;
+}
+
+.font-bebas-neue-400{
+  font-family: var(--font-bebas-neue);
+  font-weight: 400;
+}
+
+.font-inter-400{
+  font-family: var(--font-inter);
+  font-weight: 400;
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .text-shadow-black {
+    text-shadow: 2px 2px 0px black, -2px -2px 0px black, 2px -2px 0px black, -2px 2px 0px black;
   }
 }
