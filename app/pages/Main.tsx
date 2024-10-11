@@ -52,7 +52,7 @@ export default function Main() {
     <AnimatePresence>
       {snap.intro == 1 && !isExiting &&  (
         <div 
-          className="w-screen h-screen border-transparent border-2 flex justify-center items-center cursor-pointer relative"
+          className="w-screen h-screen border-transparent bg-[#F7F7F7] border-2 flex justify-center items-center cursor-pointer relative"
           onClick={handleClick_snap2}
           >
         <div className="w-[50rem] h-full border-transparent border-2 flex flex-col relative">
