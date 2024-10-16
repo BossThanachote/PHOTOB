@@ -92,7 +92,7 @@ export default function Quantity(){
                             },
                           }}
                           >
-                            PLEASE SCAN FOR DOWLOAD
+                            QUANTITY
                           </motion.p>
                         </div>
                       
@@ -130,7 +130,7 @@ export default function Quantity(){
                             className="font-bebas-neue-400 md:text-[1.7rem] sm:text-[1.2rem] hidden md:block lg:text-[2rem] select-none"
                             style={{ letterSpacing: '10px' }}
                           >
-                            PLEASE SELECT FORMAT
+                            QUANTITY
                           </p>
                           <button 
                             className="font-inter-400 lg:text-xl text-white bg-[#222222] py-4 px-4 sm:py-4 sm:px-8 rounded-2xl flex items-center"

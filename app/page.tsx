@@ -3,6 +3,7 @@ import Main from "./pages/Main";
 import Format from "./pages/Format";
 import Selfie from "./pages/Selfie";
 import Quantity from "./pages/Quantity";
+import Download from "./pages/Download";
 
 export default function Home() {
   return (
@@ -12,6 +13,7 @@ export default function Home() {
       <Format />
       <Selfie />
       <Quantity />
+      <Download />
     </main>
     </>
   );

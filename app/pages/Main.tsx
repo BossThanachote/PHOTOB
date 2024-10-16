@@ -148,7 +148,7 @@ export default function Main() {
             >
               <BiSolidRightArrow className="text-[2rem] select-none" />
             </motion.span>
-            <motion.p className="font-dream-sparks-400 text-[2rem] mx-[2rem] select-none"
+            <motion.p className="font-dream-sparks-400 text-[2rem] mx-[2rem] mt-10 select-none"
               exit={{
                 scale:2,
                 opacity:0,

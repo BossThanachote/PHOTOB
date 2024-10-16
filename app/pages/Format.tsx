@@ -457,8 +457,6 @@ export default function Format() {
                     </motion.div>
                 </motion.div>
             </div>
-          </div>
-        )}
         <Modal
           open={showModal}
           onOk={handleCloseModal}
@@ -476,6 +474,8 @@ export default function Format() {
             </Button>
           </div>
         </Modal>
+          </div>
+        )}
       </AnimatePresence>    
 
       
