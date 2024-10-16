@@ -16,16 +16,14 @@ export default function Quantity(){
     const [quantity, setQuantity] = useState(1); // เริ่มต้นที่ 1
 
     const handleDecrease = () => {
-        // ลดจำนวนถ้าจำนวนมากกว่า 1
-        if (quantity > 1) {
-            setQuantity(quantity - 1);
-        }
-    };
+      if (snap.quantity > 1) {
+          state.quantity -= 1;
+      }
+  };
 
-    const handleIncrease = () => {
-        // เพิ่มจำนวน
-        setQuantity(quantity + 1);
-    };
+  const handleIncrease = () => {
+      state.quantity += 1;
+  };
 
     const handleNext = () => {
         setIsVisible(false); 
@@ -148,12 +146,10 @@ export default function Quantity(){
                             initial={{ scale: 0, opacity: 0 }} 
                             animate={{ scale: 1, opacity: 1 }} 
                             transition={{
-                              type: "spring",
-                              damping: 5,
-                              stiffness: 30,
-                              duration: 0.1,
-                              ease: "easeInOut",
-                              delay: 1
+                              type: 'spring',
+                              stiffness: 300,
+                              damping: 20,
+                              delay:1,
                             }}
                             exit={{
                               scale: 0, 
@@ -180,7 +176,7 @@ export default function Quantity(){
                                         </div>
 
                                         <div className="w-[7rem] h-[4.5rem] bg-gray-300 rounded-2xl flex justify-center items-center text-2xl font-inter-400 text-white">
-                                            {quantity}
+                                            {snap.quantity}
                                         </div>
 
                                         <div 

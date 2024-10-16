@@ -1,9 +1,11 @@
 import { proxy } from "valtio";
+import Quantity from "../pages/Quantity";
 
 const state = proxy({
     intro: 1,
     color: "#EFBD48",
     selectedDiv: 1,
+    quantity : 1,
     selfieData: {
         step: 1,
         countdown: 12,
@@ -15,6 +17,7 @@ const state = proxy({
         state.selfieData.countdown = 12; // รีเซ็ต countdown
         state.selfieData.doneDelay = false; // รีเซ็ต doneDelay
         state.selfieData.isExiting = false; // รีเซ็ต isExiting
+        state.quantity = 1;
     }
 });
 

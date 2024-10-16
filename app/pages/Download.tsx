@@ -18,7 +18,7 @@ const formatDate = () => {
 
 export default function Download(){
 
-    const [countdown, setCountdown] = useState(12000);
+    const [countdown, setCountdown] = useState(120);
     const [isVisible, setIsVisible] = useState(false);
     const [isTimeout, setIsTimeout] = useState(false); 
     const snap = useSnapshot(state);
@@ -28,7 +28,7 @@ export default function Download(){
 
         // เมื่อ state.intro = 5 ให้เริ่มการนับถอยหลัง
         if (snap.intro === 5) {
-            setCountdown(12000); // รีเซ็ต countdown ทุกครั้งที่เข้า intro = 5
+            setCountdown(120); // รีเซ็ต countdown ทุกครั้งที่เข้า intro = 5
             setIsVisible(true); // ตั้งค่าให้เห็นหน้าจอ
 
             // เริ่มการนับถอยหลัง
@@ -103,12 +103,10 @@ export default function Download(){
                             initial={{ y: -100, opacity: 0 }} 
                           animate={{ y: 0, opacity: 1 }} 
                           transition={{
-                            type: "spring",
-                            damping: 5,
-                            stiffness: 30,
-                            duration: 0.1,
-                            ease: "easeInOut",
-                            delay: 1
+                            type: 'spring',
+                            stiffness: 300,
+                            damping: 20,
+                            delay:1,
                           }}
                           exit={{
                             y: -200, 
@@ -128,12 +126,10 @@ export default function Download(){
                           initial={{ y: -100, opacity: 0 }} 
                           animate={{ y: 0, opacity: 1 }} 
                           transition={{
-                            type: "spring",
-                            damping: 5,
-                            stiffness: 30,
-                            duration: 0.1,
-                            ease: "easeInOut",
-                            delay: 1
+                            type: 'spring',
+                              stiffness: 300,
+                              damping: 20,
+                              delay:1,
                           }}
                           exit={{
                             y: -200, 
@@ -176,12 +172,10 @@ export default function Download(){
                             initial={{ scale: 0, opacity: 0 }} 
                             animate={{ scale: 1, opacity: 1 }} 
                             transition={{
-                              type: "spring",
-                              damping: 5,
-                              stiffness: 30,
-                              duration: 0.1,
-                              ease: "easeInOut",
-                              delay: 1
+                              type: 'spring',
+                              stiffness: 300,
+                              damping: 20,
+                              delay:1,
                             }}
                             exit={{
                               scale: 0, 

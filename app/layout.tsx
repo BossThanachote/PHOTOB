@@ -25,6 +25,12 @@ const bebasNeue = localFont({
   weight: "400",
 })
 
+const SFPro = localFont({
+  src: "./fonts/SFPro.otf",
+  variable: "--font-SF-Pro",
+  weight: "400",
+})
+
 const Inter = localFont({
   src: "./fonts/Inter.ttf",
   variable: "--font-inter",
@@ -44,7 +50,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${dreamSparks.variable} ${bebasNeue.variable} ${Inter.variable} antialiased `}
+        className={`${geistSans.variable} ${geistMono.variable} ${dreamSparks.variable} ${bebasNeue.variable} ${Inter.variable} ${SFPro.variable} antialiased `}
       >
         {children}
       </body>

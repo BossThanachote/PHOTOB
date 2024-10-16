@@ -4,6 +4,7 @@ import Format from "./pages/Format";
 import Selfie from "./pages/Selfie";
 import Quantity from "./pages/Quantity";
 import Download from "./pages/Download";
+import Save from "./pages/Save";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
       <Selfie />
       <Quantity />
       <Download />
+      <Save />
     </main>
     </>
   );

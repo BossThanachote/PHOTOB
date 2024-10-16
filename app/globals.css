@@ -26,6 +26,11 @@ html{
   font-weight: 400;
 }
 
+.font-sf-400{
+  font-family: var(--font-SF-Pro);
+  font-weight: 400;
+}
+
 @layer utilities {
   .text-shadow-black {
     text-shadow: 2px 2px 0px black, -2px -2px 0px black, 2px -2px 0px black, -2px 2px 0px black;
