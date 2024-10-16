@@ -6,7 +6,8 @@ import { IoIosArrowDropleft } from "react-icons/io";
 import { IoIosArrowDropright } from "react-icons/io";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-
+import { Modal, Button } from 'antd'; 
+import 'antd/dist/reset.css'; 
 export default function Format() {
 
   const [isVisible, setIsVisible] = useState(false); 
@@ -23,17 +24,20 @@ export default function Format() {
   const [isTappedDiv3, setIsTappedDiv3] = useState(false);
   const [isHoveredDiv4, setIsHoveredDiv4] = useState(false);
   const [isTappedDiv4, setIsTappedDiv4] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
-
-  // Handle next and back transitions
   const handleNext = () => {
-    setSelectedDiv(null);
-    setIsVisible(false); 
-    setTimeout(() => {
-      state.intro = 3; 
-      setIsVisible(true); 
-    }, 1200); 
-  };
+    if (selectedDiv === null) {       
+        setShowModal(true);
+    } else {       
+        setSelectedDiv(null);
+        setIsVisible(false); 
+        setTimeout(() => {
+            state.intro = 3; 
+            setIsVisible(true); 
+        }, 1200);
+    }
+};
 
   const handleBack = () => {
     setSelectedDiv(null);
@@ -44,17 +48,22 @@ export default function Format() {
     }, 1200); 
   };
 
-  // Handle div selection
   const handleDivClick = (divNumber:any) => {
     if (selectedDiv === divNumber) {
-      setSelectedDiv(null); // Deselect if clicked again
+        setSelectedDiv(null); 
     } else {
-      setSelectedDiv(divNumber); // Select the new div
+        setSelectedDiv(divNumber); 
+        state.selectedDiv = divNumber;
+
+        // เรียกฟังก์ชันรีเซ็ตเพื่อรีเซ็ตค่าต่าง ๆ ใน Selfie
+        state.selfieData.step = 1; // เริ่มต้นที่ขั้นตอน 1
+        state.selfieData.countdown = 12; // เริ่มต้นที่การนับถอยหลัง 12
+        state.selfieData.doneDelay = false; // รีเซ็ต doneDelay
+        state.selfieData.isExiting = false; // รีเซ็ต isExiting
     }
     console.log('Div selected:', divNumber);
-  };
+};
 
-  // Shake animation for selected div
   const shakeAnimation = {
     rotate: [0, -5, 5, -5, 5, 0], 
     transition: {
@@ -74,6 +83,8 @@ export default function Format() {
     },
   };
 
+  const handleCloseModal = () => setShowModal(false);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);
@@ -84,7 +95,7 @@ export default function Format() {
   return (
     <>
       <AnimatePresence> 
-        {snap.intro == 2 &&  isVisible && (
+        {snap.intro == 2 && isVisible && (
           <div className="w-screen h-screen flex flex-col justify-between border-transparent border-2">
             {/* Navbar */}
             <div className="flex justify-center items-center w-full px-10 md:hidden py-5 border-b border-transparent">
@@ -172,20 +183,18 @@ export default function Format() {
                     }}
                     transition={selectedDiv === 1 ? shakeAnimation.transition : {}}
                     exit={exitAnimation}
-                    // ตรวจสอบว่า div นี้ไม่ได้ถูกเลือกอยู่ก่อนจะให้ hover ทำงาน
-                    onClick={() => handleDivClick(1)} // handleDivClick ใช้สำหรับเลือก/ยกเลิกการเลือก div 1
+                    onClick={() => handleDivClick(1)} 
                   >
                     {selectedDiv === 1 && <p className="font-bebas-neue-400 lg:text-[3rem] md:text-[2rem] text-[1.5rem] absolute z-20 xl:mb-[43rem] xl:mr-[7rem] lg:mb-[38rem] lg:mr-[5rem] md:mb-[30rem] md:mr-[5rem] sm:mb-[25rem] sm:mr-[4.5rem] mb-[25rem] mr-[1.5rem]" style={{ letterSpacing: '10px' }}>SELECTED</p>} 
                 
                     <motion.div className="xl:w-[26.13rem] xl:h-[39.2rem] lg:w-[22.07rem] lg:h-[35.14rem] md:w-[14.07rem] md:h-[27.14rem] sm:h-[22.14rem] sm:w-[12.5rem] h-[22.14rem] w-[10.57rem] border-2 border-black bg-black absolute z-10"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
-                        onHoverStart={() => setIsHoveredDiv1(true)} // ตั้งค่า state เมื่อ hover
+                        onHoverStart={() => setIsHoveredDiv1(true)} 
                         onHoverEnd={() => setIsHoveredDiv1(false)}
-                        onTapStart={() => setIsTappedDiv1(true)} // ตั้งค่า state เมื่อ tap เริ่ม
-                        onTap={() => setIsTappedDiv1(false)} // ตั้งค่า state เมื่อ tap เสร็จสิ้น
-                        animate={{
-                          // ปรับขนาดตามการ hover/tap ของ Div 2
+                        onTapStart={() => setIsTappedDiv1(true)} 
+                        onTap={() => setIsTappedDiv1(false)} 
+                        animate={{                          
                           scale: isHoveredDiv2 ? 1.1 : isTappedDiv2 ? 0.9 : 1,
                         }}
                         transition={{
@@ -242,12 +251,11 @@ export default function Format() {
                   
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      onHoverStart={() => setIsHoveredDiv2(true)} // ตั้งค่า state เมื่อ hover
+                      onHoverStart={() => setIsHoveredDiv2(true)} 
                       onHoverEnd={() => setIsHoveredDiv2(false)}
-                      onTapStart={() => setIsTappedDiv2(true)} // ตั้งค่า state เมื่อ tap เริ่ม
-                      onTap={() => setIsTappedDiv2(false)} // ตั้งค่า state เมื่อ tap เสร็จสิ้น
+                      onTapStart={() => setIsTappedDiv2(true)} 
+                      onTap={() => setIsTappedDiv2(false)} 
                       animate={{
-                        // ปรับขนาดตามการ hover/tap ของ Div 1
                         scale: isHoveredDiv1 ? 1.1 : isTappedDiv1 ? 0.9 : 1,
                       }}
                       transition={{
@@ -301,12 +309,11 @@ export default function Format() {
                   <motion.div className="xl:w-[26.13rem] xl:h-[39.2rem] lg:w-[22.07rem] lg:h-[35.14rem] md:w-[14.07rem] md:h-[27.14rem] sm:h-[22.14rem] sm:w-[12.5rem] h-[19.14rem] w-[10.57rem] ml-12 border-2 border-black bg-black absolute z-10 "
                    whileHover={{ scale: 1.1 }}
                    whileTap={{ scale: 0.9 }}
-                   onHoverStart={() => setIsHoveredDiv3(true)} // ตั้งค่า state เมื่อ hover
+                   onHoverStart={() => setIsHoveredDiv3(true)} 
                    onHoverEnd={() => setIsHoveredDiv3(false)}
-                   onTapStart={() => setIsTappedDiv3(true)} // ตั้งค่า state เมื่อ tap เริ่ม
-                   onTap={() => setIsTappedDiv3(false)} // ตั้งค่า state เมื่อ tap เสร็จสิ้น
+                   onTapStart={() => setIsTappedDiv3(true)} 
+                   onTap={() => setIsTappedDiv3(false)} 
                    animate={{
-                     // ปรับขนาดตามการ hover/tap ของ Div 1
                      scale: isHoveredDiv3 ? 1.1 : isTappedDiv4 ? 0.9 : 1,
                    }}
                    transition={{
@@ -390,12 +397,11 @@ export default function Format() {
                         initial={{ rotate: -90 }}
                        whileHover={{ scale: 1.1 }}
                        whileTap={{ scale: 0.9 }}
-                       onHoverStart={() => setIsHoveredDiv4(true)} // ตั้งค่า state เมื่อ hover
+                       onHoverStart={() => setIsHoveredDiv4(true)} 
                        onHoverEnd={() => setIsHoveredDiv4(false)}
-                       onTapStart={() => setIsTappedDiv4(true)} // ตั้งค่า state เมื่อ tap เริ่ม
-                       onTap={() => setIsTappedDiv4(false)} // ตั้งค่า state เมื่อ tap เสร็จสิ้น
+                       onTapStart={() => setIsTappedDiv4(true)} 
+                       onTap={() => setIsTappedDiv4(false)} 
                        animate={{
-                         // ปรับขนาดตามการ hover/tap ของ Div 1
                          scale: isHoveredDiv3 ? 1.1 : isTappedDiv4 ? 0.9 : 1,
                        }}
                        transition={{
@@ -451,9 +457,28 @@ export default function Format() {
                     </motion.div>
                 </motion.div>
             </div>
+        <Modal
+          open={showModal}
+          onOk={handleCloseModal}
+          onCancel={handleCloseModal}
+          centered
+          footer={null} // ซ่อน Footer เริ่มต้น
+          className="custom-modal select-none" // Custom class เพื่อกำหนดสไตล์เพิ่มเติม
+        >
+          {/* Container สำหรับเนื้อหาทั้งหมด */}
+          <div className="flex flex-col justify-center items-center text-center">
+          <iframe src="https://lottie.host/embed/ffc20d8a-075d-4548-a3bf-6e32a66c5dd0/Cyhnz0Jxar.json"></iframe>
+            <p className="text-lg mb-6">Please Select A Format</p>
+            <Button  onClick={handleCloseModal} className="text-center hover:text-[black]">
+              OK
+            </Button>
+          </div>
+        </Modal>
           </div>
         )}
       </AnimatePresence>    
+
+      
     </>
   );
 }
