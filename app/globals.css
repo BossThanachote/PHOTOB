@@ -31,6 +31,21 @@ html{
   font-weight: 400;
 }
 
+.font-ibm-thai-700{
+  font-family: var(--font-ibm-thai);
+  font-weight: 700;
+}
+
+.font-ibm-thai-500 {
+  font-family: var(--font-ibm-thai);
+  font-weight: 500;
+}
+
+.font-ibm-thai-400 {
+  font-family: var(--font-ibm-thai);
+  font-weight: 400;
+}
+
 @layer utilities {
   .text-shadow-black {
     text-shadow: 2px 2px 0px black, -2px -2px 0px black, 2px -2px 0px black, -2px 2px 0px black;

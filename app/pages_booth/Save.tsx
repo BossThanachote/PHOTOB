@@ -1,6 +1,6 @@
 'use client'
 import { motion, AnimatePresence } from "framer-motion";
-import state from "../store";
+import state from "../valtio_config";
 import { useSnapshot } from "valtio";
 import { IoIosArrowDropleft } from "react-icons/io";
 import { IoIosArrowDropright } from "react-icons/io";
@@ -29,25 +29,20 @@ export default function Save(){
       return () => clearInterval(timer); // ล้าง interval เมื่อ component ถูก unmount
   }, []);
 
-    useEffect(() => {
-        let timer:any;
-
-        // เมื่อ state.intro = 5 ให้เริ่มการนับถอยหลัง
-        if (snap.intro === 5) {
-            
-            setIsVisible(true); // ตั้งค่าให้เห็นหน้าจอ
-
-            // เริ่มการนับถอยหลัง
-            timer = setInterval(() => {
-            }, 1000);
-        } else {
-            clearInterval(timer); // หยุดการนับถอยหลังหาก intro ไม่ใช่ 5
-        }
-
-        // ล้าง timer เมื่อ component ถูก unmount หรือเมื่อ snap.intro เปลี่ยน
-        return () => clearInterval(timer);
-    }, [snap.intro]);
-
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | null = null;
+    // เมื่อ state.intro = 5 ให้เริ่มการนับถอยหลัง
+    if (snap.intro === 9) {
+        setIsVisible(true); 
+        timer = setInterval(() => {
+        }, 1000);
+    } else {
+        if (timer) clearInterval(timer); 
+    }
+    return () => {
+        if (timer) clearInterval(timer);
+    };
+}, [snap.intro]);
 
     const handleBack = () => {
         state.resetSelfieData(); // เรียกฟังก์ชันรีเซ็ตสถานะ
@@ -56,7 +51,7 @@ export default function Save(){
      
         setIsTimeout(false); // ซ่อน Timeout หากมีการกดปุ่ม
         setTimeout(() => {
-            state.intro = 5; // กลับไปที่หน้าก่อนหน้า
+            state.intro = 9; // กลับไปที่หน้าก่อนหน้า
             setIsVisible(true); 
         }, 1200);
         
@@ -80,7 +75,7 @@ export default function Save(){
     return(
         <>
             <AnimatePresence> 
-            {snap.intro == 6 &&  isVisible && (
+            {snap.intro == 10 &&  isVisible && (
                 <div className="w-[100%]  flex flex-col justify-between border-red-500 bg-[#F7F7F7] select-none">
                      <div className="flex justify-center items-center w-full px-10 md:hidden pt-4 border-b border-transparent">
                         

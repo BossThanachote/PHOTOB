@@ -1,6 +1,6 @@
 'use client'
 import { motion, AnimatePresence } from "framer-motion";
-import state from "../store";
+import state from "../valtio_config";
 import { useSnapshot } from "valtio";
 import { IoIosArrowDropleft } from "react-icons/io";
 import { IoIosArrowDropright } from "react-icons/io";
@@ -29,7 +29,7 @@ export default function Quantity(){
         setIsVisible(false); 
         
         setTimeout(() => {
-            state.intro = 5; 
+            state.intro = 9; 
             setIsVisible(true); 
         }, 1200); 
     };
@@ -40,7 +40,7 @@ export default function Quantity(){
         setIsVisible(false); 
     
         setTimeout(() => {
-            state.intro = 2; // กลับไปที่หน้าก่อนหน้า
+            state.intro = 7; // กลับไปที่หน้าก่อนหน้า
             setIsVisible(true); 
         }, 1200);
         
@@ -64,7 +64,7 @@ export default function Quantity(){
     return(
         <>
             <AnimatePresence> 
-            {snap.intro == 4 &&  isVisible && (
+            {snap.intro == 8 &&  isVisible && (
                 <div className="w-screen h-screen flex flex-col justify-between border-transparent border-2 bg-[#F7F7F7] select-none">
                      <div className="flex justify-center items-center w-full px-10 md:hidden pt-4 border-b border-transparent">
                         <motion.p 

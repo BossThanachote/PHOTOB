@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { BiSolidLeftArrow, BiSolidRightArrow } from "react-icons/bi";
-import state from "../store";
+import state from "../valtio_config";
 import { useSnapshot } from "valtio";
 import Image from "next/image";
 
@@ -16,12 +16,12 @@ export default function Selfie() {
     
     const handleNext = () => {
       setTimeout(() => {
-          state.intro = 4; 
+          state.intro = 6; 
       }, 1200); 
   };
 
     useEffect(() => {
-      if (snap.intro === 3) {
+      if (snap.intro === 5) {
           // เริ่มการนับถอยหลังเมื่อ intro เป็น 3
           setCountdown(12); // รีเซ็ต countdown
           setCurrentStep(1); // รีเซ็ต currentStep
@@ -30,7 +30,7 @@ export default function Selfie() {
   }, [snap.intro]);
 
     useEffect(() => {
-        if (snap.intro === 3) {
+        if (snap.intro === 5) {
             if (currentStep <= maxSteps) {
                 if (countdown > 0) {
                     const timer = setTimeout(() => setCountdown(countdown - 1), 1000); 
@@ -60,7 +60,7 @@ export default function Selfie() {
     return (
         <>
             <AnimatePresence>
-                {snap.intro == 3 && (
+                {snap.intro == 5 && (
                     <motion.div 
                         className="w-screen h-screen border-transparent border-2 flex flex-col lg:flex-row justify-center items-center relative select-none"
                         animate={{ backgroundColor: "#222222" }} 

@@ -1,11 +1,12 @@
 import { proxy } from "valtio";
-import Quantity from "../pages/Quantity";
+import Quantity from "../pages_event/Quantity";
 
 const state = proxy({
     intro: 1,
     color: "#EFBD48",
     selectedDiv: 1,
     quantity : 1,
+    language: "EN",
     selfieData: {
         step: 1,
         countdown: 12,
