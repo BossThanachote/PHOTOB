@@ -7,6 +7,9 @@ import { IoIosArrowDropright } from "react-icons/io";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { div } from "framer-motion/client";
+import { DropArea } from "./Custom";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 export default function Quantity(){
     
@@ -35,7 +38,7 @@ export default function Quantity(){
     };
 
     const handleBack = () => {
-        state.resetSelfieData(); // เรียกฟังก์ชันรีเซ็ตสถานะ
+        
     
         setIsVisible(false); 
     
@@ -60,9 +63,10 @@ export default function Quantity(){
         }, 1500);
         return () => clearTimeout(timer);
       }, []);
-
+      console.log("Colors in Quantity.tsx:", snap.colors);
     return(
         <>
+        <DndProvider backend={HTML5Backend}>
             <AnimatePresence> 
             {snap.intro == 8 &&  isVisible && (
                 <div className="w-screen h-screen flex flex-col justify-between border-transparent border-2 bg-[#F7F7F7] select-none">
@@ -188,8 +192,15 @@ export default function Quantity(){
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="w-[30rem] lg:h-[44rem] md:h-[40rem] h-[40rem]  border-[1px] border-[#C6C6C980] flex justify-center items-center bg-white">
+                            </div>                         
+                                <DropArea 
+                                    currentColorIndex={snap.currentColorIndex} 
+                                    colors={[...snap.colors]}
+                                    bgColorColor={snap.bgColorColor} 
+                                    bgColorGray={snap.bgColorGray}
+                                    droppedImages={[...(snap.droppedImages || [])]}
+                                />
+                            {/* <div className="w-[30rem] lg:h-[44rem] md:h-[40rem] h-[40rem]  border-[1px] border-[#C6C6C980] flex justify-center items-center bg-white">
                                 <div className="w-[95%] h-[95%] border-[1px] border-transparent flex-col flex ">
                                     <div className="flex flex-col border-[1px] border-transparent lg:h-[10rem] h-[7rem]">
                                         <div className="w-full h-[10%] border-[1px] border-transparent flex justify-end pt-2 pr-2">
@@ -223,7 +234,7 @@ export default function Quantity(){
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
                             <div className="xl:w-[30rem] xl:h-[44rem] lg:w-[20rem] lg:h-[44rem] w-[30rem] h-[5rem]  border-2 border-transparent">
                             <div className="w-full h-full justify-center items-center border-2 border-transparent flex flex-col lg:hidden ">
                                     <div className="border-2 border-transparent flex items-center gap-5">
@@ -254,6 +265,7 @@ export default function Quantity(){
                 </div>
             )}
             </AnimatePresence>
+            </DndProvider>
         </>
     )
 }

@@ -25,7 +25,7 @@ export default function Store(){
                 <Select />
                 <Custom />
                 <Quantity />
-                <Download />
+                <Download /> 
                 <Save />
             </main>
         </>
