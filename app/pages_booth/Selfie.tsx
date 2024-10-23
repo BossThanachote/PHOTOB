@@ -1,6 +1,6 @@
 'use client'
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BiSolidLeftArrow, BiSolidRightArrow } from "react-icons/bi";
 import state from "../valtio_config";
 import { useSnapshot } from "valtio";
@@ -12,6 +12,9 @@ export default function Selfie() {
     const [countdown, setCountdown] = useState(12); // เริ่มต้นที่ 12
     const [currentStep, setCurrentStep] = useState(1); // เริ่มต้นที่ 1
     const [doneDelay, setDoneDelay] = useState(false);
+    const [imageSrc, setImageSrc] = useState<string | null>(null); // เก็บรูปภาพที่จับจากกล้อง
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
     const maxSteps = snap.selectedDiv === 1 ? 6 : snap.selectedDiv === 2 ? 8 : 6;
     
     const handleNext = () => {
@@ -26,28 +29,66 @@ export default function Selfie() {
           setCountdown(12); // รีเซ็ต countdown
           setCurrentStep(1); // รีเซ็ต currentStep
           setDoneDelay(false); // รีเซ็ต doneDelay
+          startCamera(); // เริ่มต้นกล้อง
       }
   }, [snap.intro]);
 
-    useEffect(() => {
+     useEffect(() => {
         if (snap.intro === 5) {
             if (currentStep <= maxSteps) {
                 if (countdown > 0) {
                     const timer = setTimeout(() => setCountdown(countdown - 1), 1000); 
                     return () => clearTimeout(timer);
                 } else {
+                    captureImage(); // จับภาพเมื่อ countdown ถึง 0
                     setCountdown(12);
                     setCurrentStep(prev => prev + 1);
                 }
             } else if (currentStep > maxSteps && !doneDelay) {
                 setDoneDelay(true);
                 setTimeout(() => {
-                    state.intro = 4;
+                    state.intro = 6;
+                    stopCamera(); // ปิดกล้องเมื่อทำเสร็จ
                 }, 2000);
             }
         }
     }, [snap.intro, countdown, currentStep, doneDelay, maxSteps]); 
     
+    const startCamera = () => {
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            })
+            .catch(error => {
+                console.error("Error accessing the camera: ", error);
+            });
+    };
+
+    // ฟังก์ชันหยุดกล้อง
+    const stopCamera = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            const tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+        }
+    };
+
+    // ฟังก์ชันจับภาพจากกล้อง
+    const captureImage = () => {
+        if (videoRef.current && canvasRef.current) {
+            const context = canvasRef.current.getContext('2d');
+            if (context) {
+                context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+                const dataUrl = canvasRef.current.toDataURL('image/png');
+                setImageSrc(dataUrl); // เก็บภาพใน state
+                // คุณสามารถนำ dataUrl ไปใช้ต่อในการบันทึกหรือแสดงภาพ
+            }
+        }
+    };
+
+
     const exitAnimation = {
         scale: [1, 1.2, 0],
         opacity: [1, 0.5, 0],
@@ -80,10 +121,11 @@ export default function Selfie() {
                         <div className="xl:w-[30rem] lg:w-[20rem] hidden lg:block"></div>
                         
                         <div className="flex justify-center items-center xl:w-[36rem] xl:h-[48rem] lg:w-[27rem] lg:h-[39rem] md:w-[27rem] md:h-[39rem] sm:w-[24rem] sm:h-[36rem] w-[20rem] h-[32rem] bg-[#F7F7F7] select-none">
-                            <Image src="/capture.png" alt="capture" width={1000} height={1000}
-                                className="w-[5rem] h-[5rem]"
-                            >
-                            </Image>
+                            {imageSrc ? (
+                                <img src={imageSrc} alt="captured" className="w-[20rem] h-[32rem]" />
+                            ) : (
+                                <video ref={videoRef} autoPlay className="w-full h-full"></video>
+                            )}
                         </div>
                         
                         {/* แสดง countdown และ currentStep */}
