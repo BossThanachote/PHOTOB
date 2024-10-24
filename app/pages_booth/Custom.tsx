@@ -94,11 +94,11 @@ import { colors as mockColors } from '../MockAPI/MockFrameColor';
     const [isLargeScreen, setIsLargeScreen] = useState(false);
   
     useEffect(() => {
-      // โหลดค่าจาก state ของ valtio เมื่อเปิด DropArea ใหม่
-      if (state.droppedImages.length > 0) {
-        setDroppedImages([...state.droppedImages]);
-      }
-    }, []);
+  // โหลดค่าจาก state ของ valtio เมื่อเปิด DropArea ใหม่
+  if (state.droppedImages.length > 0) {
+    setDroppedImages([...state.droppedImages]);
+  }
+}, []);
 
     useEffect(() => {
       const updateScreenSize = () => {
@@ -199,12 +199,12 @@ import { colors as mockColors } from '../MockAPI/MockFrameColor';
             {/* ด้านล่างนี้คือ Drop Area สำหรับรูปที่ลากมา */}
             <div className="relative flex flex-col justify-center items-center border-[1px] gap-4 border-transparent h-[32rem] mb-[1rem]">
               <div className="w-full lg:h-[20rem] h-[15rem] border-[1px] border-transparent flex gap-4 justify-center items-center">
-                <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center" style={{ backgroundColor: bgColorGray}}>
-                  <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]" />
-                </div>
-                <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center" style={{ backgroundColor: bgColorGray}}>
-                  <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]" />
-                </div>
+                  <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center" style={{ backgroundColor: bgColorGray}}>
+                    <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]" />
+                  </div>
+                  <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center" style={{ backgroundColor: bgColorGray}}>
+                    <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]" />
+                  </div>
               </div>
     
               {/* แสดงภาพที่ถูกลากวางใน DropArea */}
@@ -256,6 +256,7 @@ export default function Custom() {
   const [isVisible, setIsVisible] = useState(false); 
   const snap = useSnapshot(state);
   const [showModal, setShowModal] = useState(false);
+  const dropAreaRef = useRef<HTMLDivElement | null>(null);
 
   const getText = (englishText: string, thaiText: string) => {
     return snap.language === "TH" ? thaiText : englishText;

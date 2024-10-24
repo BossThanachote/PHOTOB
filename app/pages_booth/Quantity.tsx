@@ -10,6 +10,7 @@ import { div } from "framer-motion/client";
 import { DropArea } from "./Custom";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import html2canvas from 'html2canvas';
 
 export default function Quantity(){
     

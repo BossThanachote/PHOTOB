@@ -20,7 +20,9 @@ const state = proxy({
     language: "EN",
     currentColorIndex: 0,  // เพิ่มค่า currentColorIndex
     colors: mockColors,
+    selectedImages: [] as string[],
     bgColorColor: "#DD6287",  // เพิ่มค่า bgColorColor
+    imageSrcs: [] as string[],
     droppedImages: [] as DropItem[],
     bgColorGray: "#C7C7CC",
     selfieData: {
