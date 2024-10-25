@@ -176,7 +176,7 @@ export default function Select() {
                 <div className="w-full h-full  grid grid-rows-3 grid-cols-2 border-2 border-transparent gap-1 px-4 py-4 justify-items-center align-items-center " style={{ gridAutoRows: "1fr", gridTemplateColumns: "1fr 1fr" }}>
                 {selectedImages.map((src, index) => (
                     <motion.div key={index} className="w-full aspect-w-1 aspect-h-1 bg-[#000000CC] flex justify-center items-center select-none cursor-pointer" onClick={() => handleClearImage(index)}
-                    whileTap={{scale:0.7}}
+                    whileTap={{scale:0.7}} 
                     >
                       {src ? <Image src={src} alt={`Selected image ${index}`} width={10000} height={100000} className="w-full h-full object-cover" /> : <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />}
                     </motion.div>

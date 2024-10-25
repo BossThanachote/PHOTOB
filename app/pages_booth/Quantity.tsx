@@ -7,7 +7,7 @@ import { IoIosArrowDropright } from "react-icons/io";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { div } from "framer-motion/client";
-import { DropArea } from "./Custom";
+import { DropArea } from "./DropArea";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import html2canvas from 'html2canvas';
@@ -199,6 +199,7 @@ export default function Quantity(){
                                     colors={[...snap.colors]}
                                     bgColorColor={snap.bgColorColor} 
                                     bgColorGray={snap.bgColorGray}
+                                    selectedImages={[...snap.selectedImages]}
                                     droppedImages={[...(snap.droppedImages || [])]}
                                 />
                             {/* <div className="w-[30rem] lg:h-[44rem] md:h-[40rem] h-[40rem]  border-[1px] border-[#C6C6C980] flex justify-center items-center bg-white">
