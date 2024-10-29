@@ -159,7 +159,13 @@ export default function Save(){
                                   </div>
                                 </div>
                                 <Image src="/iPhone15.png" alt="" width={10000} height={10000} className="w-full h-full abosolute z-10" />
-                                <Image src="/Frame12.png" alt="" width={10000} height={10000} className="lg:w-[20rem]  w-[15rem] absolute z-20"/>
+                                {snap.savedDropAreaImage ? (
+                                // แสดงภาพที่บันทึกไว้
+                                <img src={snap.savedDropAreaImage} alt="Saved DropArea" className="lg:w-[20rem] w-[15rem] absolute z-20 h-auto" />
+                            ) : (
+                                // ถ้าไม่มีภาพที่บันทึกไว้ ก็จะไม่แสดง DropArea อีก
+                                <p className="text-center text-gray-500">No saved image available.</p>
+                            )}
                                 <div className="lg:w-[10rem] w-[5rem] h-[0.3rem] bg-black rounded-full absolute z-30 mt-[36.5rem] lg:mt-[46rem]"></div>
                                 <div className="lg:w-[18rem] w-[15rem] h-[3.2rem] rounded-xl bg-[#8E8E93] absolute z-20 mt-[30rem] lg:mt-[40rem] flex justify-center items-center gap-2 font-inter-400 text-white cursor-pointer text-xs lg:text-base">
                                   <Image src="/savephoto.png" alt="" width={10000} height={10000} className="lg:w-5 lg:h-5 w-3 h-3"/> Save Photo

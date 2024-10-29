@@ -11,11 +11,14 @@ import { DropArea } from "./DropArea";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import html2canvas from 'html2canvas';
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
+
 
 export default function Quantity(){
     
     const [isVisible, setIsVisible] = useState(false); 
     const snap = useSnapshot(state);
+
 
     const [quantity, setQuantity] = useState(1); // เริ่มต้นที่ 1
 
@@ -194,49 +197,14 @@ export default function Quantity(){
                                     </div>
                                 </div>
                             </div>                         
-                                <DropArea 
-                                    currentColorIndex={snap.currentColorIndex} 
-                                    colors={[...snap.colors]}
-                                    bgColorColor={snap.bgColorColor} 
-                                    bgColorGray={snap.bgColorGray}
-                                    selectedImages={[...snap.selectedImages]}
-                                    droppedImages={[...(snap.droppedImages || [])]}
-                                />
-                            {/* <div className="w-[30rem] lg:h-[44rem] md:h-[40rem] h-[40rem]  border-[1px] border-[#C6C6C980] flex justify-center items-center bg-white">
-                                <div className="w-[95%] h-[95%] border-[1px] border-transparent flex-col flex ">
-                                    <div className="flex flex-col border-[1px] border-transparent lg:h-[10rem] h-[7rem]">
-                                        <div className="w-full h-[10%] border-[1px] border-transparent flex justify-end pt-2 pr-2">
-                                            <Image src="/sun.png" alt="sun" width={1000} height={1000} className="w-[2rem] h-[2rem]"></Image>
-                                        </div>
-                                        <div className="w-full h-[80%] border-[1px] border-transparent flex justify-center items-center pt-[3rem] lg:pt-[3rem] font-dream-sparks-400 text-[3rem] lg:text-[3rem]">
-                                            <Image src="/moon.png" alt="" width={1000} height={1000} className="w-[2rem] h-[2.2rem] absolute mr-[18rem] mb-[8rem]"></Image>
-                                            <p className="text-black absolute z-0">HAPPY DAY</p>
-                                            <p className="text-white absolute z-10 ml-[0.3rem] mt-[0.2rem] text-shadow-black-2">HAPPY DAY</p>
-                                        </div>
-                                        <div className="w-full h-[10%] border-[1px] border-transparent flex justify-end pb-[1.8rem] pr-2">
-                                            <Image src="/cloud-q.png" alt="cloud" width={1000} height={1000} className="w-[1.5rem] h-[1rem] absolute"></Image>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col justify-center items-center border-[1px] gap-4 border-transparent h-[32rem] mb-[1rem]">
-                                        <div className="w-full lg:h-[20rem] h-[15rem] border-[1px] border-transparent flex gap-4 justify-center items-center">
-                                            <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center">
-                                                <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]"></Image>
-                                            </div>
-                                            <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center">
-                                                <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]"></Image>
-                                            </div>
-                                        </div>
-                                        <div className="w-full lg:h-[20rem] h-[15rem] border-[1px] border-transparent flex gap-4 justify-center items-center">
-                                            <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center">
-                                                <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]"></Image>
-                                            </div>
-                                            <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center">
-                                                <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]"></Image>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> */}
+                            {snap.savedDropAreaImage ? (
+                                // แสดงภาพที่บันทึกไว้
+                                <img src={snap.savedDropAreaImage} alt="Saved DropArea" className="w-[30rem] h-auto"  />
+                            ) : (
+                                // ถ้าไม่มีภาพที่บันทึกไว้ ก็จะไม่แสดง DropArea อีก
+                                <p className="text-center text-gray-500">No saved image available.</p>
+                            )}
+                           
                             <div className="xl:w-[30rem] xl:h-[44rem] lg:w-[20rem] lg:h-[44rem] w-[30rem] h-[5rem]  border-2 border-transparent">
                             <div className="w-full h-full justify-center items-center border-2 border-transparent flex flex-col lg:hidden ">
                                     <div className="border-2 border-transparent flex items-center gap-5">

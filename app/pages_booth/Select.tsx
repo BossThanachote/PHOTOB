@@ -49,21 +49,22 @@ export default function Select() {
   };
 
   const handleImageClick = (src: string) => {
-    // หาช่องที่ว่างในฝั่งซ้ายและใส่รูปภาพลงไป
     const nextEmptyIndex = selectedImages.findIndex(image => image === "");
     if (nextEmptyIndex !== -1) {
-      const updatedImages = [...selectedImages];
-      updatedImages[nextEmptyIndex] = src;
-      setSelectedImages(updatedImages);
+        const updatedImages = [...selectedImages];
+        updatedImages[nextEmptyIndex] = src;
+        setSelectedImages(updatedImages);
+        state.selectedImages = updatedImages; // อัปเดตใน valtio state
     }
-  };
+};
 
-  const handleClearImage = (index: number) => {
-    // ลบรูปจากฝั่งซ้ายเมื่อมีการคลิกที่ช่อง
-    const updatedImages = [...selectedImages];
-    updatedImages[index] = "";
-    setSelectedImages(updatedImages);
-  };  
+
+const handleClearImage = (index: number) => {
+  const updatedImages = [...selectedImages];
+  updatedImages[index] = "";
+  setSelectedImages(updatedImages);
+  state.selectedImages = updatedImages; // อัปเดตใน valtio state
+};
 
   const handleCloseModal = () => setShowModal(false);
 
@@ -175,12 +176,12 @@ export default function Select() {
               }}>
                 <div className="w-full h-full  grid grid-rows-3 grid-cols-2 border-2 border-transparent gap-1 px-4 py-4 justify-items-center align-items-center " style={{ gridAutoRows: "1fr", gridTemplateColumns: "1fr 1fr" }}>
                 {selectedImages.map((src, index) => (
-                    <motion.div key={index} className="w-full aspect-w-1 aspect-h-1 bg-[#000000CC] flex justify-center items-center select-none cursor-pointer" onClick={() => handleClearImage(index)}
-                    whileTap={{scale:0.7}} 
-                    >
-                      {src ? <Image src={src} alt={`Selected image ${index}`} width={10000} height={100000} className="w-full h-full object-cover" /> : <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />}
-                    </motion.div>
-                  ))}
+                     <motion.div key={index} className="w-full aspect-w-1 aspect-h-1 bg-[#000000CC] flex justify-center items-center select-none cursor-pointer" onClick={() => handleClearImage(index)}
+                         whileTap={{ scale: 0.7 }}
+                     >
+                         {src ? <Image src={src} alt={`Selected image ${index}`} width={10000} height={100000} className="w-full h-full object-cover" /> : <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />}
+                     </motion.div>
+                 ))}
                 </div>
               </motion.div>
               <motion.div className="xl:w-[44rem] xl:h-[45rem] lg:w-[32rem] lg:h-[28rem] md:w-[18rem] md:h-[20rem] w-[18rem] h-[18rem] grid grid-cols-3 gap-1 justify-items-center align-items-center py-[1.5rem] px-[1rem] border-2 border-transparent" style={{ gridAutoRows: "1fr", gridTemplateColumns: "1fr 1fr" }}

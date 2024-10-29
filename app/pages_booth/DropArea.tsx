@@ -12,10 +12,30 @@ import { Modal, Button } from 'antd';
 import 'antd/dist/reset.css'; 
 import { ChromePicker } from "react-color";
 import { MockImages } from "../MockAPI/MockImage";
+import React, { forwardRef, useImperativeHandle,} from 'react';
 
-import { colors as mockColors } from '../MockAPI/MockFrameColor';
 
+function convertHexToHue(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
 
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let hue = 0;
+
+  if (max === min) {
+      hue = 0;
+  } else if (max === r) {
+      hue = ((g - b) / (max - min)) * 60;
+  } else if (max === g) {
+      hue = (2.0 + (b - r) / (max - min)) * 60;
+  } else {
+      hue = (4.0 + (r - g) / (max - min)) * 60;
+  }
+
+  return hue < 0 ? hue + 360 : hue;
+}
 
 interface DropItem {
     id: number;
@@ -83,17 +103,30 @@ interface DropItem {
 
   interface DropAreaProps {
         currentColorIndex: number;
+        currentColorIndexBorder: number;
         colors: string[];
+        colorsBorder: string[];
         bgColorColor: string;
         bgColorGray: string;
         droppedImages: DropItem[];
         selectedImages: string[];
+        filterColor: string;
       }
      // DropArea component for dropping images
-      export const DropArea: React.FC<DropAreaProps> = ({ currentColorIndex, colors, bgColorColor, bgColorGray, selectedImages, droppedImages}) => {
+     export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
+      ({ currentColorIndex,currentColorIndexBorder, colors, colorsBorder, bgColorColor, filterColor, bgColorGray, droppedImages, selectedImages }, ref) => {
         const [droppedImagesState, setDroppedImages] = useState<DropItem[]>([]);
         const dropAreaRef = useRef<HTMLDivElement | null>(null);
         const [isLargeScreen, setIsLargeScreen] = useState(false);
+        const internalRef = useRef<HTMLDivElement | null>(null); // สร้าง internal ref
+        
+         useEffect(() => {
+         // Connect external ref to internal ref
+         if (ref && typeof ref === 'object' && ref.current !== null) {
+             ref.current = dropAreaRef.current;
+         }
+     }, [ref, dropAreaRef]);
+        
       
         useEffect(() => {
       // โหลดค่าจาก state ของ valtio เมื่อเปิด DropArea ใหม่
@@ -171,7 +204,7 @@ interface DropItem {
             }),
           });
           
-    
+          useImperativeHandle(ref, () => dropAreaRef.current as HTMLDivElement);
           //component ภาพถ่าย
           return (
             <div
@@ -180,7 +213,7 @@ interface DropItem {
                 drop(node as any);
               }}
               className="relative w-[30rem] lg:h-[44rem] md:h-[40rem] h-[40rem] border-[1px] border-[#C6C6C980] flex justify-center items-center bg-white lg:mb-0 mb-10 overflow-hidden"
-              style={{ backgroundColor: isOver ? "#f0f0f0" : colors[currentColorIndex] , }} 
+              style={{ backgroundColor: isOver ? "#f0f0f0" : colors[currentColorIndex] , borderColor : isOver ? "#C7C7C7" : colorsBorder[currentColorIndexBorder] }} 
               onDragStart={(e) => e.preventDefault()}
             >
               <div className="w-[95%] h-[95%] border-[1px] border-transparent flex-col flex ">
@@ -199,14 +232,28 @@ interface DropItem {
                 </div>
         
                 {/* ด้านล่างนี้คือ Drop Area สำหรับรูปที่ลากมา */}
-                <div className="relative grid grid-cols-2 justify-center items-center border-[1px] gap-4 border-red-500 h-full">
+                <div className="relative grid grid-cols-2 grid-rows-3 gap-2 justify-center items-center border-[1px] border-transparent h-full"  >
                 {selectedImages.map((src, index) => (
-                    <motion.div key={index} className="w-full aspect-w-1 aspect-h-1 bg-[#000000CC] flex justify-center items-center select-none cursor-pointer" 
-                    whileTap={{scale:0.7}} 
-                    >
-                      {src ? <Image src={src} alt={`Selected image ${index}`} width={10000} height={100000} className="w-full h-full object-cover" /> : <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />}
+                    <motion.div key={index} className="w-full h-full bg-[#000000CC] flex justify-center items-center select-none cursor-pointer" style={{backgroundColor: bgColorColor}}>
+                        {src ? (
+                          <div className="relative w-full h-full">
+                            <div className="absolute z-10 top-0 left-0 w-full h-full" style={{ backgroundColor: bgColorGray }} />
+                            <Image
+                              src={src}
+                              alt={`Selected image ${index}`}
+                              width={2000}
+                              height={15000}
+                              className="w-full h-full object-cover relative"
+                            />
+                          </div>
+                        ) : (
+                            <Image src="/picture.png" alt="" width={10000} height={100000} className="w-[5rem] h-[5rem]" />
+                        )}
                     </motion.div>
-                  ))}
+                ))}
+
+..
+
         
                   {/* แสดงภาพที่ถูกลากวางใน DropArea */}
                   {droppedImagesState.map((image, index) => (
@@ -227,4 +274,4 @@ interface DropItem {
               </div>
             </div>
           );
-        };
+        });
