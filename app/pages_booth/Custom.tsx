@@ -17,9 +17,11 @@ import { colorsBorder as mockColorsBorder } from "../MockAPI/MockBorderColor";
 import { DropArea } from "./DropArea";
 import html2canvas from 'html2canvas';
 
+
   const ItemTypes = {
     IMAGE: "image",
   };
+
 
 //   // กำหนดไซส์รูปขนาดเดิม
   const getImageSize = (src: string): Promise<{ width: number, height: number }> => {
@@ -92,6 +94,13 @@ export default function Custom() {
   const snap = useSnapshot(state);
   const [showModal, setShowModal] = useState(false);
   const dropAreaRef = useRef<HTMLDivElement | null>(null);
+
+
+  const [refreshKey, setRefreshKey] = useState(0);
+  const handleClearStickers = () => {
+    state.droppedImages = []; // ล้างข้อมูลสติ๊กเกอร์ที่ถูกวางบน DropArea
+    setRefreshKey(prev => prev + 1); // อัปเดต refreshKey เพื่อบังคับ re-render
+  };
 
   const getText = (englishText: string, thaiText: string) => {
     return snap.language === "TH" ? thaiText : englishText;
@@ -389,6 +398,7 @@ const handleRightClick = () => {
                 {/* component ภาพถ่าย + ลากรูป */}
                 <DropArea
                   ref={dropAreaRef}
+                  key={refreshKey}
                   currentColorIndex={snap.currentColorIndex}
                   currentColorIndexBorder={snap.currentColorIndexBorder}
                   colors={mockColors}
@@ -427,7 +437,8 @@ const handleRightClick = () => {
                     {/* หัวข้อสติ๊กเกอร์ */}
                     <div className="w-full flex gap-3 items-center font-inter-400 text-[1.5rem] justify-center lg:justify-start" onDragStart={(e) => e.preventDefault()}>
                         <Image src="/heart.png" alt="heart" width={10000} height={10000} className="w-[2rem] h-[2rem]" />
-                        <div>Sticker</div>  
+                        <div>Sticker</div>
+                        <div onClick={handleClearStickers} className="cursor-pointer text-red-500">Delete</div>
                     </div>
                     {/* สติ๊กเกอร์ */}
                     <div className="border-2 border-transparent flex items-center gap-5">
