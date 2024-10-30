@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { IBM_Plex_Sans_Thai } from "next/font/google";
 import "./globals.css";
+
+const IBM_Thai = IBM_Plex_Sans_Thai({
+  subsets: ['latin'],
+  variable: "--font-ibm-thai",
+  weight: ['700', '500', '400'],
+})
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -25,6 +32,12 @@ const bebasNeue = localFont({
   weight: "400",
 })
 
+const SFPro = localFont({
+  src: "./fonts/SFPro.otf",
+  variable: "--font-SF-Pro",
+  weight: "400",
+})
+
 const Inter = localFont({
   src: "./fonts/Inter.ttf",
   variable: "--font-inter",
@@ -44,7 +57,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${dreamSparks.variable} ${bebasNeue.variable} ${Inter.variable} antialiased `}
+        className={`${geistSans.variable} ${geistMono.variable} ${dreamSparks.variable} ${bebasNeue.variable} ${Inter.variable} ${SFPro.variable} ${IBM_Thai.variable} antialiased `}
       >
         {children}
       </body>

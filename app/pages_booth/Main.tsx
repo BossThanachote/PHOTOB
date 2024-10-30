@@ -2,13 +2,29 @@
 import { motion,AnimatePresence } from "framer-motion";
 import { BiSolidLeftArrow } from "react-icons/bi";
 import { BiSolidRightArrow } from "react-icons/bi";
-import state from "../store";
+import state from "../valtio_config";
 import { useSnapshot } from "valtio";
 import { useState } from "react";
+import Image from "next/image";
 
 export default function Main() {
   const snap = useSnapshot(state);
   const [isExiting, setIsExiting] = useState(false); 
+  const [screenText, setScreenText] = useState("TOUCH SCREEN");
+
+  const getText = (englishText: string, thaiText: string) => {
+    return snap.language === "TH" ? thaiText : englishText;
+  };
+
+  const handleClickUS = (event: React.MouseEvent<HTMLImageElement>) => {
+    event.stopPropagation();
+    state.language = "EN"; 
+  };
+
+  const handleClickTH = (event: React.MouseEvent<HTMLImageElement>) => {
+    event.stopPropagation();
+    state.language = "TH"; 
+  };
 
   const handleClick_snap2 = () => {
     setIsExiting(true); 
@@ -52,9 +68,32 @@ export default function Main() {
     <AnimatePresence>
       {snap.intro == 1 && !isExiting &&  (
         <div 
-          className="w-screen h-screen border-transparent bg-[#F7F7F7] border-2 flex justify-center items-center cursor-pointer relative"
+          className="w-screen h-screen border-transparent bg-[#F7F7F7] border-2 flex justify-center items-center  relative"
           onClick={handleClick_snap2}
           >
+        <motion.div className="w-[90%] lg:h-[10rem] h-[7rem] border-2 border-transparent top-0 absolute z-20 flex items-center justify-end gap-3"
+          initial={{ y: -100, opacity: 0 }} 
+          animate={{ y: 0, opacity: 1 }} 
+          transition={{
+            type: "spring",
+            damping: 5,
+            stiffness: 30,
+            duration: 0.1,
+            ease: "easeInOut",
+            
+          }}
+          exit={{
+            y: -200, 
+            opacity: 0, 
+            transition: {
+              opacity: { duration: 1, ease: "easeOut" },
+              duration: 0.3,
+              ease: "backIn", 
+            },
+          }}>
+          <Image src="/US.png" alt="us" width={10000} height={10000} className="w-[5rem] h-[3.5rem] cursor-pointer" onClick={handleClickUS}/>
+          <Image src="/TH.png" alt="us" width={10000} height={10000} className="w-[5rem] h-[3.5rem] cursor-pointer" onClick={handleClickTH}/>
+        </motion.div>
         <div className="w-[50rem] h-full border-transparent border-2 flex flex-col relative">
         <motion.div
           className="w-full h-[20rem] flex justify-center items-center border-transparent border-2 mt-[8rem] md:mt-[15rem] relative"
@@ -148,7 +187,7 @@ export default function Main() {
             >
               <BiSolidRightArrow className="text-[2rem] select-none" />
             </motion.span>
-            <motion.p className="font-dream-sparks-400 text-[2rem] mx-[2rem] mt-10 select-none"
+            <motion.p className="font-dream-sparks-400 text-[2rem] mx-[2rem] mt-8 select-none"
               exit={{
                 scale:2,
                 opacity:0,
@@ -159,7 +198,7 @@ export default function Main() {
                 }
               }}  
             >
-              TOUCH SCREEN
+              {getText("TOUCH SCREEN", "แตะหน้าจอ")}
             </motion.p> 
             <motion.span 
               variants={bounceLeft} 

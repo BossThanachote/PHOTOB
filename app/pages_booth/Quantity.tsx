@@ -1,12 +1,15 @@
 'use client'
 import { motion, AnimatePresence } from "framer-motion";
-import state from "../store";
+import state from "../valtio_config";
 import { useSnapshot } from "valtio";
 import { IoIosArrowDropleft } from "react-icons/io";
 import { IoIosArrowDropright } from "react-icons/io";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { div } from "framer-motion/client";
+import { DropArea } from "./Custom";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 export default function Quantity(){
     
@@ -16,33 +19,31 @@ export default function Quantity(){
     const [quantity, setQuantity] = useState(1); // เริ่มต้นที่ 1
 
     const handleDecrease = () => {
-        // ลดจำนวนถ้าจำนวนมากกว่า 1
-        if (quantity > 1) {
-            setQuantity(quantity - 1);
-        }
-    };
+      if (snap.quantity > 1) {
+          state.quantity -= 1;
+      }
+  };
 
-    const handleIncrease = () => {
-        // เพิ่มจำนวน
-        setQuantity(quantity + 1);
-    };
+  const handleIncrease = () => {
+      state.quantity += 1;
+  };
 
     const handleNext = () => {
         setIsVisible(false); 
         
         setTimeout(() => {
-            state.intro = 5; 
+            state.intro = 9; 
             setIsVisible(true); 
         }, 1200); 
     };
 
     const handleBack = () => {
-        state.resetSelfieData(); // เรียกฟังก์ชันรีเซ็ตสถานะ
+        
     
         setIsVisible(false); 
     
         setTimeout(() => {
-            state.intro = 2; // กลับไปที่หน้าก่อนหน้า
+            state.intro = 7; // กลับไปที่หน้าก่อนหน้า
             setIsVisible(true); 
         }, 1200);
         
@@ -62,11 +63,12 @@ export default function Quantity(){
         }, 1500);
         return () => clearTimeout(timer);
       }, []);
-
+      console.log("Colors in Quantity.tsx:", snap.colors);
     return(
         <>
+        <DndProvider backend={HTML5Backend}>
             <AnimatePresence> 
-            {snap.intro == 4 &&  isVisible && (
+            {snap.intro == 8 &&  isVisible && (
                 <div className="w-screen h-screen flex flex-col justify-between border-transparent border-2 bg-[#F7F7F7] select-none">
                      <div className="flex justify-center items-center w-full px-10 md:hidden pt-4 border-b border-transparent">
                         <motion.p 
@@ -148,12 +150,10 @@ export default function Quantity(){
                             initial={{ scale: 0, opacity: 0 }} 
                             animate={{ scale: 1, opacity: 1 }} 
                             transition={{
-                              type: "spring",
-                              damping: 5,
-                              stiffness: 30,
-                              duration: 0.1,
-                              ease: "easeInOut",
-                              delay: 1
+                              type: 'spring',
+                              stiffness: 300,
+                              damping: 20,
+                              delay:1,
                             }}
                             exit={{
                               scale: 0, 
@@ -180,7 +180,7 @@ export default function Quantity(){
                                         </div>
 
                                         <div className="w-[7rem] h-[4.5rem] bg-gray-300 rounded-2xl flex justify-center items-center text-2xl font-inter-400 text-white">
-                                            {quantity}
+                                            {snap.quantity}
                                         </div>
 
                                         <div 
@@ -192,8 +192,15 @@ export default function Quantity(){
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="w-[30rem] lg:h-[44rem] md:h-[40rem] h-[40rem]  border-[1px] border-[#C6C6C980] flex justify-center items-center bg-white">
+                            </div>                         
+                                <DropArea 
+                                    currentColorIndex={snap.currentColorIndex} 
+                                    colors={[...snap.colors]}
+                                    bgColorColor={snap.bgColorColor} 
+                                    bgColorGray={snap.bgColorGray}
+                                    droppedImages={[...(snap.droppedImages || [])]}
+                                />
+                            {/* <div className="w-[30rem] lg:h-[44rem] md:h-[40rem] h-[40rem]  border-[1px] border-[#C6C6C980] flex justify-center items-center bg-white">
                                 <div className="w-[95%] h-[95%] border-[1px] border-transparent flex-col flex ">
                                     <div className="flex flex-col border-[1px] border-transparent lg:h-[10rem] h-[7rem]">
                                         <div className="w-full h-[10%] border-[1px] border-transparent flex justify-end pt-2 pr-2">
@@ -227,7 +234,7 @@ export default function Quantity(){
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
                             <div className="xl:w-[30rem] xl:h-[44rem] lg:w-[20rem] lg:h-[44rem] w-[30rem] h-[5rem]  border-2 border-transparent">
                             <div className="w-full h-full justify-center items-center border-2 border-transparent flex flex-col lg:hidden ">
                                     <div className="border-2 border-transparent flex items-center gap-5">
@@ -258,6 +265,7 @@ export default function Quantity(){
                 </div>
             )}
             </AnimatePresence>
+            </DndProvider>
         </>
     )
 }

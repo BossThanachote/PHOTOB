@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { BiSolidLeftArrow, BiSolidRightArrow } from "react-icons/bi";
-import state from "../store";
+import state from "../valtio_config";
 import { useSnapshot } from "valtio";
 import Image from "next/image";
 
