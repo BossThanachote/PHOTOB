@@ -33,6 +33,7 @@ const state = proxy({
     selectedColorFilter: "rgba(0,0,0,0)",
     droppedImages: [] as DropItem[],
     savedDropAreaImage: null as string | null,
+    shortenedURL: '',
     selfieData: {
         step: 1,
         countdown: 12,
@@ -50,6 +51,7 @@ const state = proxy({
         state.selfieData.countdown = 12; // รีเซ็ต countdown
         state.selfieData.doneDelay = false; // รีเซ็ต doneDelay
         state.selfieData.isExiting = false; // รีเซ็ต isExiting
+        state.shortenedURL = '';
         state.quantity = 1;
     }
 });

@@ -5,13 +5,21 @@ import { useSnapshot } from "valtio";
 import { IoIosArrowDropleft } from "react-icons/io";
 import { IoIosArrowDropright } from "react-icons/io";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { div } from "framer-motion/client";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import html2canvas from 'html2canvas';
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
+import { DropArea } from "./DropArea";
+
 
 export default function Quantity(){
     
+    const dropAreaRef = useRef(null); 
     const [isVisible, setIsVisible] = useState(false); 
     const snap = useSnapshot(state);
+
 
     const [quantity, setQuantity] = useState(1); // เริ่มต้นที่ 1
 
@@ -25,22 +33,37 @@ export default function Quantity(){
       state.quantity += 1;
   };
 
-    const handleNext = () => {
-        setIsVisible(false); 
-        
-        setTimeout(() => {
-            state.intro = 5; 
-            setIsVisible(true); 
-        }, 1200); 
-    };
+  const handleNext = async () => {
+    const dropAreaElement = dropAreaRef.current;
+    if (dropAreaElement) {
+      // เพิ่ม filterColor เข้าไปในสไตล์ของ dropAreaElement โดยตรง
+
+  
+      const canvas = await html2canvas(dropAreaElement);
+      const imageURL = canvas.toDataURL("image/png");
+  
+      // บันทึก imageURL ลงใน state ของ valtio
+      state.savedDropAreaImage = imageURL;
+  
+
+    }
+    
+    setIsVisible(false);
+    setTimeout(() => {
+      state.intro = 5;
+      setIsVisible(true);
+    }, 1200);
+  };
 
     const handleBack = () => {
-        state.resetSelfieData(); // เรียกฟังก์ชันรีเซ็ตสถานะ
+      state.savedDropAreaImage = null; // หรือถ้าใช้เป็นอาเรย์ ก็ใช้ state.imageSrcs = [];
+      state.imageSrcs = [];
+      state.selectedImages = []; //
     
         setIsVisible(false); 
     
         setTimeout(() => {
-            state.intro = 2; // กลับไปที่หน้าก่อนหน้า
+            state.intro = 3; // กลับไปที่หน้าก่อนหน้า
             setIsVisible(true); 
         }, 1200);
         
@@ -60,9 +83,10 @@ export default function Quantity(){
         }, 1500);
         return () => clearTimeout(timer);
       }, []);
-
+      console.log("Colors in Quantity.tsx:", snap.colors);
     return(
         <>
+        <DndProvider backend={HTML5Backend}>
             <AnimatePresence> 
             {snap.intro == 4 &&  isVisible && (
                 <div className="w-screen h-screen flex flex-col justify-between border-transparent border-2 bg-[#F7F7F7] select-none">
@@ -188,42 +212,17 @@ export default function Quantity(){
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="w-[30rem] lg:h-[44rem] md:h-[40rem] h-[40rem]  border-[1px] border-[#C6C6C980] flex justify-center items-center bg-white">
-                                <div className="w-[95%] h-[95%] border-[1px] border-transparent flex-col flex ">
-                                    <div className="flex flex-col border-[1px] border-transparent lg:h-[10rem] h-[7rem]">
-                                        <div className="w-full h-[10%] border-[1px] border-transparent flex justify-end pt-2 pr-2">
-                                            <Image src="/sun.png" alt="sun" width={1000} height={1000} className="w-[2rem] h-[2rem]"></Image>
-                                        </div>
-                                        <div className="w-full h-[80%] border-[1px] border-transparent flex justify-center items-center pt-[3rem] lg:pt-[3rem] font-dream-sparks-400 text-[3rem] lg:text-[3rem]">
-                                            <Image src="/moon.png" alt="" width={1000} height={1000} className="w-[2rem] h-[2.2rem] absolute mr-[18rem] mb-[8rem]"></Image>
-                                            <p className="text-black absolute z-0">HAPPY DAY</p>
-                                            <p className="text-white absolute z-10 ml-[0.3rem] mt-[0.2rem] text-shadow-black-2">HAPPY DAY</p>
-                                        </div>
-                                        <div className="w-full h-[10%] border-[1px] border-transparent flex justify-end pb-[1.8rem] pr-2">
-                                            <Image src="/cloud-q.png" alt="cloud" width={1000} height={1000} className="w-[1.5rem] h-[1rem] absolute"></Image>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col justify-center items-center border-[1px] gap-4 border-transparent h-[32rem] mb-[1rem]">
-                                        <div className="w-full lg:h-[20rem] h-[15rem] border-[1px] border-transparent flex gap-4 justify-center items-center">
-                                            <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center">
-                                                <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]"></Image>
-                                            </div>
-                                            <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center">
-                                                <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]"></Image>
-                                            </div>
-                                        </div>
-                                        <div className="w-full lg:h-[20rem] h-[15rem] border-[1px] border-transparent flex gap-4 justify-center items-center">
-                                            <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center">
-                                                <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]"></Image>
-                                            </div>
-                                            <div className="bg-[#C7C7CC] lg:w-[13rem] lg:h-[16rem] w-[13rem] h-[15rem] flex justify-center items-center">
-                                                <Image src="/picture.png" alt="" width={1000} height={1000} className="w-[1.5rem] h-[1.5rem]"></Image>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            </div>                         
+                            <DropArea
+                              ref={dropAreaRef} 
+                              currentColorIndex={snap.currentColorIndex}
+                              currentColorIndexBorder={snap.currentColorIndexBorder}
+                              bgColorColor={snap.bgColorColor}
+                              bgColorGray={snap.bgColorGray}
+                              selectedImages={[...(snap.selectedImages || [])]} 
+                              filterColor={snap.filterColor}
+                            />
+                           
                             <div className="xl:w-[30rem] xl:h-[44rem] lg:w-[20rem] lg:h-[44rem] w-[30rem] h-[5rem]  border-2 border-transparent">
                             <div className="w-full h-full justify-center items-center border-2 border-transparent flex flex-col lg:hidden ">
                                     <div className="border-2 border-transparent flex items-center gap-5">
@@ -254,6 +253,7 @@ export default function Quantity(){
                 </div>
             )}
             </AnimatePresence>
+            </DndProvider>
         </>
     )
 }
