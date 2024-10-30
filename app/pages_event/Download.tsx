@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { div } from "framer-motion/client";
 import { QRCode } from 'antd';
+import axios from "axios";
 
 const formatDate = () => {
     const today = new Date();
@@ -16,12 +17,47 @@ const formatDate = () => {
     }
   
 
+
 export default function Download(){
 
     const [countdown, setCountdown] = useState(120);
     const [isVisible, setIsVisible] = useState(false);
     const [isTimeout, setIsTimeout] = useState(false); 
     const snap = useSnapshot(state);
+
+    const shortenURL = async (longURL:any) => {
+      try {
+          const response = await axios.post(
+              "https://api-ssl.bitly.com/v4/shorten",
+              {
+                  long_url: longURL,
+                  domain: "bit.ly",
+              },
+              {
+                  headers: {
+                      Authorization: `Bearer cdb317925980b7e8bf62ff6bc120f1f40ba00b8f`,
+                      "Content-Type": "application/json",
+                  },
+              }
+          );
+          return response.data.link;
+      } catch (error) {
+          console.error("Error shortening URL:", error);
+          return null;
+      }
+  };
+
+    useEffect(() => {
+      if (snap.savedDropAreaImage) {
+          shortenURL(`/picturebooth?imageURL=${encodeURIComponent(snap.savedDropAreaImage)}`)
+              .then(shortURL => {
+                  if (shortURL) {
+                      state.shortenedURL = shortURL; // เก็บ URL ที่ย่อแล้วใน valtio state
+                  }
+              });
+      }
+  }, [snap.savedDropAreaImage]);
+
 
     useEffect(() => {
         let timer:any;
@@ -218,7 +254,7 @@ export default function Download(){
                                     </div>
                                     <div className="flex flex-col justify-center items-center border-[1px] gap-4 border-transparent h-[32rem] mb-[1rem]">
                                     <QRCode
-                                      value="https://example.com" // ใส่ลิงก์หรือข้อมูลที่ต้องการให้แสดงใน QR code
+                                      value={snap.shortenedURL || 'https://example.com'}
                                       size={300} // กำหนดขนาดของ QR code
                                       style={{ marginTop: '20px' }} // ใช้เพิ่ม styling ถ้าต้องการ                                    
                                     />

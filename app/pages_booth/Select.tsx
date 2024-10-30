@@ -9,52 +9,62 @@ import { useState, useEffect } from "react";
 import { Modal, Button } from 'antd'; 
 import 'antd/dist/reset.css'; 
 
-
 export default function Select() {
 
-  const [isVisible, setIsVisible] = useState(false); 
   const snap = useSnapshot(state);
+  const [isVisible, setIsVisible] = useState(false); 
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [showModal, setShowModal] = useState(false);
 
   const getText = (englishText: string, thaiText: string) => {
     return snap.language === "TH" ? thaiText : englishText;
   };
 
+  useEffect(() => {
+    // ตั้งค่า selectedImages ขึ้นอยู่กับจำนวนภาพที่ดึงมา
+    setSelectedImages(Array(snap.imageSrcs.length).fill(""));
+  }, [snap.imageSrcs.length]);
+
   const handleNext = () => {
-    setIsVisible(false); 
-    setTimeout(() => {
-      state.intro = 7; 
-      setIsVisible(true); 
-    }, 1200); 
-};
+    // ตรวจสอบว่าช่องทางซ้ายเต็มหรือยัง
+    const isFull = selectedImages.every(image => image !== "");
+    if (!isFull) {
+      setShowModal(true); // แสดง Modal ถ้ายังใส่รูปไม่ครบ
+    } else {
+      setIsVisible(false); 
+      setTimeout(() => {
+        state.intro = 7; 
+        setIsVisible(true); 
+      }, 1200); 
+    }
+  };
 
   const handleBack = () => {
     setIsVisible(false); 
     setTimeout(() => {
+      state.imageSrcs = [];  // รีเซ็ตภาพถ่ายเมื่อย้อนกลับไปหน้าถ่ายใหม่
       state.intro = 5; 
       setIsVisible(true); 
     }, 1200); 
   };
 
+  const handleImageClick = (src: string) => {
+    const nextEmptyIndex = selectedImages.findIndex(image => image === "");
+    if (nextEmptyIndex !== -1) {
+        const updatedImages = [...selectedImages];
+        updatedImages[nextEmptyIndex] = src;
+        setSelectedImages(updatedImages);
+        state.selectedImages = updatedImages; // อัปเดตใน valtio state
+    }
+};
 
-  const shakeAnimation = {
-    rotate: [0, -5, 5, -5, 5, 0], 
-    transition: {
-      duration: 0.5, 
-      repeat: Infinity, 
-      ease: "easeInOut",
-      repeatDelay: 2,
-    },
-  };
 
-  const exitAnimation = {
-    scale: [1, 1.2, 0],
-    opacity: [1, 0.5, 0],
-    transition: {
-      duration: 0.5,
-      ease: "easeInOut"
-    },
-  };
+const handleClearImage = (index: number) => {
+  const updatedImages = [...selectedImages];
+  updatedImages[index] = "";
+  setSelectedImages(updatedImages);
+  state.selectedImages = updatedImages; // อัปเดตใน valtio state
+};
 
   const handleCloseModal = () => setShowModal(false);
 
@@ -164,28 +174,17 @@ export default function Select() {
                     ease: "easeInOut", 
                   },
               }}>
-                <div className="w-full h-[80%]  grid grid-rows-3 grid-cols-2 gap-1 justify-items-center align-items-center pt-[1rem] px-[1rem]">
-                  <div className="w-[95%] h-[90%] bg-[#000000CC] flex justify-center items-center select-none">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div> 
-                  <div className="w-[95%] h-[90%] bg-[#000000CC] flex justify-center items-center">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div>
-                  <div className="w-[95%] h-[90%] bg-[#000000CC] flex justify-center items-center">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div>
-                  <div className="w-[95%] h-[90%] bg-[#000000CC] flex justify-center items-center">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div>
-                  <div className="w-[95%] h-[90%] bg-[#000000CC] flex justify-center items-center">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div>
-                  <div className="w-[95%] h-[90%] bg-[#000000CC] flex justify-center items-center">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div>
+                <div className="w-full h-full  grid grid-rows-3 grid-cols-2 border-2 border-transparent gap-1 px-4 py-4 justify-items-center align-items-center " style={{ gridAutoRows: "1fr", gridTemplateColumns: "1fr 1fr" }}>
+                {selectedImages.map((src, index) => (
+                     <motion.div key={index} className="w-full aspect-w-1 aspect-h-1 bg-[#000000CC] flex justify-center items-center select-none cursor-pointer" onClick={() => handleClearImage(index)}
+                         whileTap={{ scale: 0.7 }}
+                     >
+                         {src ? <Image src={src} alt={`Selected image ${index}`} width={10000} height={100000} className="w-full h-full object-cover" /> : <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />}
+                     </motion.div>
+                 ))}
                 </div>
               </motion.div>
-              <motion.div className="xl:w-[53rem] xl:h-[35rem] lg:w-[32rem] lg:h-[28rem] md:w-[32rem] md:h-[18rem] w-[23rem] h-[18rem] grid grid-rows-2 grid-cols-3 gap-1 justify-items-center align-items-center pt-[1.5rem] px-[1rem]"
+              <motion.div className="xl:w-[44rem] xl:h-[45rem] lg:w-[32rem] lg:h-[28rem] md:w-[18rem] md:h-[20rem] w-[18rem] h-[18rem] grid grid-cols-3 gap-1 justify-items-center align-items-center py-[1.5rem] px-[1rem] border-2 border-transparent" style={{ gridAutoRows: "1fr", gridTemplateColumns: "1fr 1fr" }}
                 initial={{ scale: 0, opacity: 0 }} 
                 animate={{ scale: 1, opacity: 1 }} 
                 transition={{
@@ -203,24 +202,14 @@ export default function Select() {
                     ease: "easeInOut", 
                   },
               }}>
-                  <div className="w-[95%] h-[90%] bg-[#C7C7CC] flex justify-center items-center select-none">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div>
-                  <div className="w-[95%] h-[90%] bg-[#C7C7CC] flex justify-center items-center">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div>
-                  <div className="w-[95%] h-[90%] bg-[#C7C7CC] flex justify-center items-center">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div>
-                  <div className="w-[95%] h-[90%] bg-[#C7C7CC] flex justify-center items-center">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div>
-                  <div className="w-[95%] h-[90%] bg-[#C7C7CC] flex justify-center items-center">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div>
-                  <div className="w-[95%] h-[90%] bg-[#C7C7CC] flex justify-center items-center">
-                    <Image src="/picture.png" alt="" width={10000} height={100000} className="w-5 h-5" />
-                  </div>
+                {/* รูป */}
+                {snap.imageSrcs.map((src, index) => (
+                  <motion.div key={index} className="w-full aspect-w-1 aspect-h-1 bg-[#000000CC] flex justify-center items-center select-none cursor-pointer overflow-hidden" onClick={() => handleImageClick(src)}
+                  whileTap={{scale:0.7}}
+                  >
+                    <Image src={src} alt={`Captured image ${index}`} width={10000} height={100000} className="w-full h-full object-cover" />
+                  </motion.div>
+                ))}
               </motion.div>
             </div>
             
@@ -234,8 +223,7 @@ export default function Select() {
         >
           {/* Container สำหรับเนื้อหาทั้งหมด */}
           <div className="flex flex-col justify-center items-center text-center">
-          <iframe src="https://lottie.host/embed/ffc20d8a-075d-4548-a3bf-6e32a66c5dd0/Cyhnz0Jxar.json"></iframe>
-            <p className="text-lg mb-6">{getText("Please Select A Format","กรุณาเลือกแบบรูปภาพ")}</p>
+            <p className="text-lg mb-6">{getText("Please select all the images to proceed", "กรุณาเลือกรูปภาพให้ครบก่อนดำเนินการ")}</p>
             <Button onClick={handleCloseModal} className="text-center hover:text-[black]">
               {getText("OK","ตกลง")}
             </Button>
@@ -244,8 +232,6 @@ export default function Select() {
           </div>
         )}
       </AnimatePresence>    
-
-      
     </>
   );
 }
