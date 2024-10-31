@@ -218,7 +218,7 @@ export default function Download(){
                                     </div>
                                     <div className="flex flex-col justify-center items-center border-[1px] gap-4 border-transparent h-[32rem] mb-[1rem]">
                                     <QRCode
-                                      value={`/picturebooth?imageURL=${encodeURIComponent(snap.savedDropAreaImage || '')}`}
+                                      value=""
                                       size={300} // กำหนดขนาดของ QR code
                                       style={{ marginTop: '20px' }} // ใช้เพิ่ม styling ถ้าต้องการ                                    
                                     />

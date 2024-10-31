@@ -30,7 +30,7 @@ export default function Download(){
           const response = await axios.post(
               "https://api-ssl.bitly.com/v4/shorten",
               {
-                  long_url: longURL,
+                  long_url: snap.savedDropAreaImage,
                   domain: "bit.ly",
               },
               {
@@ -43,6 +43,7 @@ export default function Download(){
           return response.data.link;
       } catch (error) {
           console.error("Error shortening URL:", error);
+          console.error(snap.savedDropAreaImage)
           return null;
       }
   };
