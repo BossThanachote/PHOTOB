@@ -71,7 +71,7 @@ export default function Selfie() {
         if (interval) {
             clearInterval(interval);
         }
-    };
+    };      
 }, [snap.intro, doneDelay, maxSteps]);
     
     const startCamera = () => {
