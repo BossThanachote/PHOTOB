@@ -1,6 +1,7 @@
-import BannerForm from "../pages_admin/banner-form"
-import SignIn from "../pages_admin/register-form"
-export default function AdminDashBoard(){
+import BannerForm from "@/app/pages_admin/banner-form";
+import Verify from "@/app/pages_admin/verify-form";
+
+export default function AdminVerify(){
     return(
         <>
         <div className="grid grid-cols-10 w-full h-screen">
@@ -8,7 +9,7 @@ export default function AdminDashBoard(){
                 <BannerForm />
             </div>
             <div className="md:col-span-4 col-span-10">
-                <SignIn />
+                <Verify />
             </div>
         </div>
         </>
