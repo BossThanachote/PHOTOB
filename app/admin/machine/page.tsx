@@ -2,7 +2,7 @@
 
 import AuthGuard from "@/app/components/AuthGuard";
 import SideBar from "@/app/pages_admin/sidebar-form";
-import Dashboard from "@/app/pages_admin/dash-form";
+import Machine from "@/app/pages_admin/machine-form";
 
 export default function AdminMachine() {
   return (
@@ -12,7 +12,7 @@ export default function AdminMachine() {
           <SideBar />
         </div>
         <div className="md:col-span-8 col-span-10">
-          <Dashboard />
+          <Machine />
         </div>
       </div>
     </AuthGuard>

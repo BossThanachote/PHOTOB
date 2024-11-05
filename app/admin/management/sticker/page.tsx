@@ -2,9 +2,9 @@
 
 import AuthGuard from "@/app/components/AuthGuard";
 import SideBar from "@/app/pages_admin/sidebar-form";
-import Dashboard from "@/app/pages_admin/dash-form";
+import StickerManagement from "@/app/pages_admin/sticker-form";
 
-export default function AdminManagement() {
+export default function AdminSticker() {
   return (
     <AuthGuard>
       <div className="grid grid-cols-10 w-full h-screen">
@@ -12,7 +12,7 @@ export default function AdminManagement() {
           <SideBar />
         </div>
         <div className="md:col-span-8 col-span-10">
-          <Dashboard />
+          <StickerManagement />
         </div>
       </div>
     </AuthGuard>

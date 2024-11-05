@@ -2,9 +2,9 @@
 
 import AuthGuard from "@/app/components/AuthGuard";
 import SideBar from "@/app/pages_admin/sidebar-form";
-import Dashboard from "@/app/pages_admin/dash-form";
+import FilterManagement from "@/app/pages_admin/filter-form";
 
-export default function AdminManagement() {
+export default function AdminFilter() {
   return (
     <AuthGuard>
       <div className="grid grid-cols-10 w-full h-screen">
@@ -12,7 +12,7 @@ export default function AdminManagement() {
           <SideBar />
         </div>
         <div className="md:col-span-8 col-span-10">
-          <Dashboard />
+          <FilterManagement />
         </div>
       </div>
     </AuthGuard>

@@ -5,25 +5,39 @@ import { Mail, Lock, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { setAuthToken } from "../utils/auth";
+import { profileAPI } from "../MockAPI/MockProfile";
 
 // Mock API function
-const mockLogin = async (email: string, password: string): Promise<{ success: boolean; message: string; token?: string }> => {
+const mockLogin = async (email: string, password: string): Promise<{ 
+  success: boolean; 
+  message: string; 
+  token?: string;
+  userData?: {
+    email: string;
+    name: string;
+  }
+}> => {
   await new Promise(resolve => setTimeout(resolve, 1000));
   
+  // ตรวจสอบว่าเป็น email และ password ที่ถูกต้อง
   if (email === 'loginkoakod@hotmail.com' && password === 'Bosshaha1122') {
     return { 
       success: true, 
       message: 'Login successful',
-      token: 'mock_jwt_token' // ในการใช้งานจริงควรใช้ JWT token จาก server
+      token: 'mock_jwt_token',
+      userData: {
+        email: email,
+        name: 'Admin name'
+      }
     };
   }
   
+  // กรณีที่ email หรือ password ไม่ถูกต้อง
   return { 
     success: false, 
-    message: 'Invalid email or password' 
+    message: 'Invalid email or password. This email is not registered in the system.' 
   };
 };
-
 
 
 // Separate button component for reusability
@@ -107,9 +121,16 @@ export default function SignIn() {
     try {
       const response = await mockLogin(email, password);
       
-      if (response.success && response.token) {
-        setAuthToken(response.token);
+      if (response.success && response.token && response.userData) {
+        // เก็บ token และ email ใน cookie และ localStorage
+        setAuthToken(response.token, response.userData.email);
+        
+        // Initialize profile
+        profileAPI.initializeProfile(response.userData.email, response.token);
+        
         setMessage({ text: response.message, type: 'success' });
+        
+        // redirect ไป dashboard
         setTimeout(() => {
           router.push('/admin/dashboard');
         }, 1000);
@@ -133,7 +154,7 @@ export default function SignIn() {
     }
   };
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white select-none">
       <div className="h-[8rem] flex items-center">
         <button
           type="button"

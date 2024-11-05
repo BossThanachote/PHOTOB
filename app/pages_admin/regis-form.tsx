@@ -55,7 +55,7 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white select-none">
       <div className="h-[8rem] flex items-center">
           <button
             type="button"

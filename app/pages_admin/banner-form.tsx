@@ -2,7 +2,7 @@ import Link from "next/link"
 export default function BannerForm(){
     return(
         <>
-            <div className="bg-border bg-[#9B1C27] h-full flex justify-center md:flex hidden">
+            <div className="bg-border bg-[#9B1C27] h-full flex justify-center md:flex hidden select-none">
                 <header className="flex flex-col w-[70%] justify-center items-center
                 lg:h-[100%]  
                 "

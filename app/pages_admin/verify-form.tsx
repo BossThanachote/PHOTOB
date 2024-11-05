@@ -144,7 +144,7 @@ export default function Verify() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white select-none">
       <div className="h-[8rem] flex items-center">
         <Link href="/admin/forgot-password">
           <button
