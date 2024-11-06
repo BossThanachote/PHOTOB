@@ -12,18 +12,32 @@ export default function SideBar() {
   const [showManageSubmenu, setShowManageSubmenu] = useState(false)
   const [selectedSubmenu, setSelectedSubmenu] = useState('')
   
-  // สำหรับจัดการข้อมูลโปรไฟล์
-  const [profile, setProfile] = useState<Profile>(profileAPI.getProfile())
+  // กำหนดค่าเริ่มต้นของ Profile
+  const defaultProfile: Profile = {
+    name: 'Admin name',
+    email: 'loginkoakod@hotmail.com',
+    image: '/default-profile.png'
+  }
+  
+  const [profile, setProfile] = useState<Profile>(defaultProfile)
   const [isEditing, setIsEditing] = useState(false)
-  const [editName, setEditName] = useState(profile.name)
+  const [editName, setEditName] = useState(defaultProfile.name)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // โหลดข้อมูลโปรไฟล์เมื่อคอมโพเนนต์ถูกโหลด
   useEffect(() => {
-    const savedProfile = profileAPI.getProfile()
-    setProfile(savedProfile)
-    setEditName(savedProfile.name)
-  }, [])
+    // ตรวจสอบ authentication
+    const isAuth = profileAPI.isAuthenticated();
+    const currentProfile = profileAPI.getProfile();
+    
+    if (!isAuth || !currentProfile) {
+      profileAPI.clearSession();
+      router.push('/admin/signin');
+      return;
+    }
+
+    setProfile(currentProfile);
+    setEditName(currentProfile.name);
+  }, [router]);
 
   // อัพเดท selected menu ตาม pathname
   useEffect(() => {
@@ -63,7 +77,6 @@ export default function SideBar() {
     const file = e.target.files?.[0]
     if (file) {
       try {
-        // แปลงไฟล์เป็น Base64
         const base64 = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => {
@@ -73,9 +86,10 @@ export default function SideBar() {
           reader.readAsDataURL(file);
         });
         
-        // อัพเดทข้อมูลผ่าน mock API
-        const updatedProfile = await profileAPI.updateProfileImage(base64)
-        setProfile(updatedProfile)
+        const updatedProfile = await profileAPI.updateProfileImage(base64);
+        if (updatedProfile) {
+          setProfile(updatedProfile);
+        }
       } catch (error) {
         console.error('Error uploading image:', error)
       }
@@ -88,10 +102,11 @@ export default function SideBar() {
 
   const handleSaveName = async () => {
     try {
-      // อัพเดทข้อมูลผ่าน mock API
-      const updatedProfile = await profileAPI.updateProfileName(editName)
-      setProfile(updatedProfile)
-      setIsEditing(false)
+      const updatedProfile = await profileAPI.updateProfileName(editName);
+      if (updatedProfile) {
+        setProfile(updatedProfile);
+        setIsEditing(false);
+      }
     } catch (error) {
       console.error('Error saving name:', error)
     }
@@ -154,11 +169,12 @@ export default function SideBar() {
     return `flex w-[85%] h-[2.5rem] rounded-md justify-start items-center pl-4 cursor-pointer transition-colors ${
       selectedSubmenu === submenu ? 'bg-[#1E293B] text-[#F7F7F7]' : 'text-[#8E8E93] hover:bg-[#1E293B] hover:text-[#F7F7F7]'
     }`
+    
   }
 
   return(
-    <div className="bg-black h-[59rem] w-full text-white select-none">
-      <div className="flex justify-start pl-10 items-center w-full h-[10rem]">
+    <div className="bg-black h-[59rem] w-full text-white select-none font-ibm-thai-400">
+      <div className="flex flex-col 2xl:flex-row justify-start xl:pl-10 items-center w-full h-[10rem] 2xl:pt-0 pt-5">
         {/* Profile Image Section */}
         <div className="relative group">
           <img 
@@ -185,9 +201,9 @@ export default function SideBar() {
 
         {/* Profile Info Section */}
         <div className="flex flex-col ml-4 text-[#F7F7F7]">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center 2xl:justify-start gap-2">
             {isEditing ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center  gap-2">
                 <input
                   type="text"
                   value={editName}
@@ -221,6 +237,7 @@ export default function SideBar() {
               <>
                 <span>{profile.name}</span>
                 <button
+                  type="button"
                   aria-label="editname" 
                   onClick={handleEditName}
                   className="text-gray-400 hover:text-gray-300"
@@ -239,6 +256,8 @@ export default function SideBar() {
         <div 
           className={getMenuStyle('dashboard')}
           onClick={() => handleMenuClick('dashboard')}
+          role="button"
+          tabIndex={0}
         >
           <Image src="/Dashicon.png" alt="" width={24} height={24} className="w-[1.5rem] h-[1.5rem]" />
           Dashboard
@@ -248,6 +267,8 @@ export default function SideBar() {
           <div 
             className={`${getMenuStyle('management')} ${showManageSubmenu ? 'text-[#F7F7F7]' : ''}`}
             onClick={() => handleMenuClick('management')}
+            role="button"
+            tabIndex={0}
           >
             <Image src="/Manageicon.png" alt="" width={24} height={24} className="w-[1.5rem] h-[1.5rem]" />
             Management
@@ -258,18 +279,24 @@ export default function SideBar() {
               <div 
                 className={getSubmenuStyle('frame')}
                 onClick={() => handleSubmenuClick('frame')}
+                role="button"
+                tabIndex={0}
               >
                 Frame management
               </div>
               <div 
                 className={getSubmenuStyle('sticker')}
                 onClick={() => handleSubmenuClick('sticker')}
+                role="button"
+                tabIndex={0}
               >
                 Sticker management
               </div>
               <div 
                 className={getSubmenuStyle('filter')}
                 onClick={() => handleSubmenuClick('filter')}
+                role="button"
+                tabIndex={0}
               >
                 Filter management
               </div>
@@ -280,6 +307,8 @@ export default function SideBar() {
         <div 
           className={getMenuStyle('machine')}
           onClick={() => handleMenuClick('machine')}
+          role="button"
+          tabIndex={0}
         >
           <Image src="/Machineicon.png" alt="" width={24} height={24} className="w-[1.5rem] h-[1.5rem]" />
           Machine Management
@@ -288,22 +317,23 @@ export default function SideBar() {
         <div 
           className={getMenuStyle('photo')}
           onClick={() => handleMenuClick('photo')}
+          role="button"
+          tabIndex={0}
         >
           <Image src="/Photoicon.png" alt="" width={24} height={24} className="w-[1.5rem] h-[1.5rem]" />
           Photo
         </div>
       </div>
+
       {/* logout */}
       <div className="absolute bottom-0 w-[24rem] pl-7 pb-6">
         <button
           type="button"
           onClick={() => {
-            // ลบข้อมูล token และ redirect ไปหน้า signin
-            localStorage.removeItem('token');
-            profileAPI.clearSession(); // เพิ่มฟังก์ชันนี้ใน MockProfile.ts
+            profileAPI.clearSession();
             router.push('/admin/signin');
           }}
-          className="flex gap-2 w-[90%] h-[2.5rem] rounded-md items-center pl-4 cursor-pointer transition-colors text-[#8E8E93] hover:bg-[#1E293B] hover:text-[#F7F7F7]"
+          className="flex gap-2 w-[90%] sm:w-[9rem] md:w-[13rem] lg:w-[13rem] 3xl:w-[20rem] h-[2.5rem] rounded-md items-center pl-4 cursor-pointer transition-colors text-[#8E8E93] hover:bg-[#1E293B] hover:text-[#F7F7F7]"
         >
           <svg 
             width="24" 
