@@ -1,5 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation';
+
 import { MoreHorizontal, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from 'lucide-react'
 
 type StatusType = 'Active' | 'Inactive' | 'Declined';
@@ -9,12 +11,24 @@ interface Status {
   color: string;
 }
 
+interface ActionMenuItem {
+  label: string;
+  icon: JSX.Element;
+  path: string;
+  onClick?: (id: string) => void;  
+}
+
 interface Transaction {
   id: string;
   status: StatusType;
   totalSale: number;
   date: string;
+  actionDropdownId?: string;
 }
+
+const isTransaction = (item: any): item is Transaction => {
+  return item && typeof item.id === 'string';
+};
 
 const statusConfig: Record<StatusType, Status> = {
   Active: {
@@ -31,7 +45,43 @@ const statusConfig: Record<StatusType, Status> = {
   },
 };
 
+const router = useRouter();
+
+const actionMenuItems = (transactions: Transaction[]) => [ // เปลี่ยนเป็น function ที่รับ transactions
+  {
+    label: 'Information',
+    icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+      <path strokeWidth="2" d="M12 16v-4M12 8h.01"/>
+    </svg>,
+    path: '/admin/machine/information',
+    onClick: (id: string) => {
+      // ใส่ type ให้ชัดเจน
+      const machineData = transactions.find((t: Transaction) => t.id === id);
+      if (machineData) {
+        localStorage.setItem('selectedMachineData', JSON.stringify(machineData));
+        router.push(`/admin/machine/information/${id}`);
+      }
+    }
+  },
+  {
+    label: 'Edit',
+    icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+    </svg>,
+    path: '/admin/machine/edit'
+  },
+  {
+    label: 'Delete',
+    icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+    </svg>,
+    path: '/admin/machine/delete'
+  }
+];
+
 export default function Machine() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'Event' | 'Department'>('Event')
   const [entriesPerPage, setEntriesPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
@@ -96,6 +146,39 @@ export default function Machine() {
     });
     setOpenDropdownId(null);
   };
+
+  const actionMenuItems = (transactions: Transaction[]) => [ // เปลี่ยนเป็น function ที่รับ transactions
+    {
+      label: 'Information',
+      icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+        <path strokeWidth="2" d="M12 16v-4M12 8h.01"/>
+      </svg>,
+      path: '/admin/machine/information',
+      onClick: (id: string) => {
+        // ใส่ type ให้ชัดเจน
+        const machineData = transactions.find((t: Transaction) => t.id === id);
+        if (machineData) {
+          localStorage.setItem('selectedMachineData', JSON.stringify(machineData));
+          router.push(`/admin/machine/information/${id}`);
+        }
+      }
+    },
+    {
+      label: 'Edit',
+      icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+      </svg>,
+      path: '/admin/machine/edit'
+    },
+    {
+      label: 'Delete',
+      icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>,
+      path: '/admin/machine/delete'
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-[#F7F7F7] select-none">
@@ -205,8 +288,8 @@ export default function Machine() {
                               <ChevronDown size={16} className="text-gray-400" />
                             )}
                           </button>
-                          
-                          {/* Dropdown Menu */}
+
+                          {/* Status Dropdown Menu */}
                           {openDropdownId === transaction.id && (
                             <div className="absolute left-0 mt-1 w-[120px] bg-white border rounded-md shadow-lg z-10">
                               {Object.entries(statusConfig)
@@ -235,14 +318,41 @@ export default function Machine() {
                             View
                           </button>
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 relative">
                           <button
                             type="button"
                             className="text-gray-400 hover:text-gray-600 p-2 rounded-lg transition-colors"
                             aria-label="More options"
+                            onClick={() => toggleDropdown(`action_${transaction.id}`)}
                           >
                             <MoreHorizontal size={20} />
                           </button>
+                        
+                          {/* Action Dropdown Menu */}
+                          {openDropdownId === `action_${transaction.id}` && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20">
+                            <div className="py-1">
+                              {actionMenuItems(transactions).map((item) => ( // เรียกใช้ function แทน
+                                <button
+                                  key={item.label}
+                                  type="button"
+                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                  onClick={() => {
+                                    if (item.onClick) {
+                                      item.onClick(transaction.id);
+                                    } else {
+                                      router.push(`${item.path}/${transaction.id}`);
+                                    }
+                                    setOpenDropdownId(null);
+                                  }}
+                                >
+                                  <span className="mr-3 text-gray-400">{item.icon}</span>
+                                  {item.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          )}
                         </td>
                       </tr>
                     ))}
