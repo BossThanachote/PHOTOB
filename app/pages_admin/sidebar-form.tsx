@@ -43,7 +43,12 @@ export default function SideBar() {
   useEffect(() => {
     const path = pathname.split('/')
     const currentPath = path[path.length - 1]
-    
+    if (path.includes('machine')) {
+      setSelectedMenu('machine')
+      setShowManageSubmenu(false)
+      return; // ออกจาก effect ทันทีถ้าเป็น path machine
+    }
+
     switch(currentPath) {
       case 'dashboard':
         setSelectedMenu('dashboard')
@@ -133,7 +138,7 @@ export default function SideBar() {
           router.push('/admin/dashboard')
           break
         case 'machine':
-          router.push('/admin/machine')
+          router.push('/admin/machine/event')
           break
         case 'photo':
           router.push('/admin/photo')
@@ -173,7 +178,7 @@ export default function SideBar() {
   }
 
   return(
-    <div className="bg-black h-[59rem] w-full text-white select-none font-ibm-thai-400">
+    <div className="bg-black h-[60rem] w-full text-white select-none font-ibm-thai-400 sticky top-0">
       <div className="flex flex-col 2xl:flex-row justify-start xl:pl-10 items-center w-full h-[10rem] 2xl:pt-0 pt-5">
         {/* Profile Image Section */}
         <div className="relative group">

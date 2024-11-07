@@ -45,42 +45,9 @@ const statusConfig: Record<StatusType, Status> = {
   },
 };
 
-const router = useRouter();
 
-const actionMenuItems = (transactions: Transaction[]) => [ // เปลี่ยนเป็น function ที่รับ transactions
-  {
-    label: 'Information',
-    icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" strokeWidth="2"/>
-      <path strokeWidth="2" d="M12 16v-4M12 8h.01"/>
-    </svg>,
-    path: '/admin/machine/information',
-    onClick: (id: string) => {
-      // ใส่ type ให้ชัดเจน
-      const machineData = transactions.find((t: Transaction) => t.id === id);
-      if (machineData) {
-        localStorage.setItem('selectedMachineData', JSON.stringify(machineData));
-        router.push(`/admin/machine/information/${id}`);
-      }
-    }
-  },
-  {
-    label: 'Edit',
-    icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-    </svg>,
-    path: '/admin/machine/edit'
-  },
-  {
-    label: 'Delete',
-    icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-    </svg>,
-    path: '/admin/machine/delete'
-  }
-];
 
-export default function Machine() {
+export default function MachineEvent() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'Event' | 'Department'>('Event')
   const [entriesPerPage, setEntriesPerPage] = useState(10)
@@ -122,6 +89,15 @@ export default function Machine() {
   const toggleDropdown = (id: string) => {
     setOpenDropdownId(openDropdownId === id ? null : id);
   }
+
+  const handleTabChange = (tab: 'Event' | 'Department') => {
+    setActiveTab(tab);
+    if (tab === 'Event') {
+      router.push('/admin/machine/event');
+    } else {
+      router.push('/admin/machine/department');
+    }
+  };
 
   const handleStatusChange = (transactionId: string, newStatus: StatusType) => {
     setTransactions(prevTransactions => {
@@ -180,6 +156,15 @@ export default function Machine() {
     }
   ];
 
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.includes('/event')) {
+      setActiveTab('Event');
+    } else if (path.includes('/department')) {
+      setActiveTab('Department');
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#F7F7F7] select-none">
       {/* Navbar */}
@@ -198,30 +183,30 @@ export default function Machine() {
         <div className="bg-white rounded-lg shadow-sm">
           {/* Tab and Filter Section */}
           <div className="p-4 md:p-6 border-b">
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={`px-4 md:px-6 py-2 rounded-lg flex-1 md:flex-none text-center ${
-                  activeTab === 'Event'
-                    ? 'bg-pink-100 text-pink-600'
-                    : 'hover:bg-gray-50'
-                }`}
-                onClick={() => setActiveTab('Event')}
-              >
-                Event
-              </button>
-              <button
-                type="button"
-                className={`px-4 md:px-6 py-2 rounded-lg flex-1 md:flex-none text-center ${
-                  activeTab === 'Department'
-                    ? 'bg-pink-100 text-pink-600'
-                    : 'hover:bg-gray-50'
-                }`}
-                onClick={() => setActiveTab('Department')}
-              >
-                Department
-              </button>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={`px-4 md:px-6 py-2 rounded-lg flex-1 md:flex-none text-center ${
+                activeTab === 'Event'
+                  ? 'bg-pink-100 text-pink-600'
+                  : 'hover:bg-gray-50'
+              }`}
+              onClick={() => handleTabChange('Event')}
+            >
+              Event
+            </button>
+            <button
+              type="button"
+              className={`px-4 md:px-6 py-2 rounded-lg flex-1 md:flex-none text-center ${
+                activeTab === 'Department'
+                  ? 'bg-pink-100 text-pink-600'
+                  : 'hover:bg-gray-50'
+              }`}
+              onClick={() => handleTabChange('Department')}
+            >
+              Department
+            </button>
+          </div>
           </div>
 
           {/* Table Controls */}

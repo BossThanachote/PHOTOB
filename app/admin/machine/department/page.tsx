@@ -2,9 +2,9 @@
 
 import AuthGuard from "@/app/components/AuthGuard";
 import SideBar from "@/app/pages_admin/sidebar-form";
-import Machine from "@/app/pages_admin/machine-event-form";
+import MachineDepart from "@/app/pages_admin/machine-depart-form";
 
-export default function AdminMachine() {
+export default function AdminMachineDepart() {
   return (
     <AuthGuard>
       <div className="grid grid-cols-10 w-full h-screen">
@@ -12,7 +12,7 @@ export default function AdminMachine() {
           <SideBar />
         </div>
         <div className="sm:col-span-7 xl:col-span-8 col-span-10">
-          <Machine />
+          <MachineDepart />
         </div>
       </div>
     </AuthGuard>

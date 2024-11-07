@@ -70,6 +70,7 @@ export default function StickerManagement() {
                 onChange={(e) => setEntriesPerPage(Number(e.target.value))}
                 className="border rounded-lg px-2 py-1 w-20"
               >
+                {/* value entries list of machine */}
                 <option value={10}>10</option>
                 <option value={25}>25</option>
                 <option value={50}>50</option>
