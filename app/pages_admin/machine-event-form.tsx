@@ -1,36 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation';
-
+import { eventAPI } from '../MockAPI/mockEventAPI';
 import { MoreHorizontal, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Transaction,StatusType } from '@/types/types';
 
-type StatusType = 'Active' | 'Inactive' | 'Declined';
-
-interface Status {
-  value: StatusType;
-  color: string;
-}
-
-interface ActionMenuItem {
-  label: string;
-  icon: JSX.Element;
-  path: string;
-  onClick?: (id: string) => void;  
-}
-
-interface Transaction {
-  id: string;
-  status: StatusType;
-  totalSale: number;
-  date: string;
-  actionDropdownId?: string;
-}
-
-const isTransaction = (item: any): item is Transaction => {
-  return item && typeof item.id === 'string';
-};
-
-const statusConfig: Record<StatusType, Status> = {
+const statusConfig = {
   Active: {
     value: 'Active',
     color: 'bg-green-500',
@@ -44,47 +19,29 @@ const statusConfig: Record<StatusType, Status> = {
     color: 'bg-red-500',
   },
 };
-
-
-
+ 
 export default function MachineEvent() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'Event' | 'Department'>('Event')
   const [entriesPerPage, setEntriesPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
 
-  // Mock data
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: '001',
-      status: 'Active',
-      totalSale: 1002500,
-      date: '2023-04-05, 00:05PM',
-    },
-    {
-      id: '002',
-      status: 'Active',
-      totalSale: 1002500,
-      date: '2023-04-05, 00:05PM',
-    },
-  ])
+  const handleResetData = () => {
+    const resetData = eventAPI.resetToDefault();
+    setTransactions(resetData);
+  };
 
-  // โหลดข้อมูลเมื่อ component mount
   useEffect(() => {
-    try {
-      const currentProfile = localStorage.getItem('adminProfile');
-      if (currentProfile) {
-        const { email } = JSON.parse(currentProfile);
-        const savedTransactions = localStorage.getItem(`${email}_transactions`);
-        if (savedTransactions) {
-          setTransactions(JSON.parse(savedTransactions));
-        }
-      }
-    } catch (error) {
-      console.error('Error loading from localStorage:', error);
-    }
+    const loadTransactions = eventAPI.getTransactions();
+    setTransactions(loadTransactions);
   }, []);
+
+  useEffect(() => {
+    const searchResults = eventAPI.searchTransactions(searchTerm);
+    setTransactions(searchResults);
+  }, [searchTerm]);
 
   const toggleDropdown = (id: string) => {
     setOpenDropdownId(openDropdownId === id ? null : id);
@@ -100,43 +57,23 @@ export default function MachineEvent() {
   };
 
   const handleStatusChange = (transactionId: string, newStatus: StatusType) => {
-    setTransactions(prevTransactions => {
-      const updatedTransactions = prevTransactions.map(transaction => 
-        transaction.id === transactionId 
-          ? { ...transaction, status: newStatus }
-          : transaction
-      );
-      
-      // บันทึกลง localStorage
-      try {
-        const currentProfile = localStorage.getItem('adminProfile');
-        if (currentProfile) {
-          const { email } = JSON.parse(currentProfile);
-          localStorage.setItem(`${email}_transactions`, JSON.stringify(updatedTransactions));
-        }
-      } catch (error) {
-        console.error('Error saving to localStorage:', error);
-      }
-      
-      return updatedTransactions;
-    });
+    const updatedTransactions = eventAPI.updateTransactionStatus(transactionId, newStatus);
+    setTransactions(updatedTransactions);
     setOpenDropdownId(null);
   };
 
-  const actionMenuItems = (transactions: Transaction[]) => [ // เปลี่ยนเป็น function ที่รับ transactions
+  const actionMenuItems = [
     {
       label: 'Information',
       icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="10" strokeWidth="2"/>
         <path strokeWidth="2" d="M12 16v-4M12 8h.01"/>
       </svg>,
-      path: '/admin/machine/information',
       onClick: (id: string) => {
-        // ใส่ type ให้ชัดเจน
-        const machineData = transactions.find((t: Transaction) => t.id === id);
+        const machineData = transactions.find(t => t.id === id);
         if (machineData) {
           localStorage.setItem('selectedMachineData', JSON.stringify(machineData));
-          router.push(`/admin/machine/information/${id}`);
+          router.push(`/admin/machine/${activeTab.toLowerCase()}/information/${id}?type=${activeTab}`);
         }
       }
     },
@@ -145,31 +82,34 @@ export default function MachineEvent() {
       icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
       </svg>,
-      path: '/admin/machine/edit'
+      onClick: (id: string) => {
+        router.push(`/admin/machine/event/edit/${id}`);
+      }
     },
     {
       label: 'Delete',
       icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
       </svg>,
-      path: '/admin/machine/delete'
+      onClick: (id: string) => {
+        const updatedTransactions = eventAPI.deleteTransaction(id);
+        setTransactions(updatedTransactions);
+        setOpenDropdownId(null);
+      }
     }
   ];
 
-  useEffect(() => {
-    const path = window.location.pathname;
-    if (path.includes('/event')) {
-      setActiveTab('Event');
-    } else if (path.includes('/department')) {
-      setActiveTab('Department');
-    }
-  }, []);
-
   return (
     <div className="min-h-screen bg-[#F7F7F7] select-none">
-      {/* Navbar */}
       <div className="h-auto min-h-[4rem] bg-white flex flex-col md:flex-row justify-between items-start md:items-center p-4 md:px-6 shadow-sm gap-4">
-        <h1 className="text-xl font-medium font-ibm-thai-600">Machine</h1>
+        <h1 className="text-xl font-medium">Machine</h1>
+        <button 
+            type="button"
+            onClick={handleResetData}
+            className="bg-yellow-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium hover:bg-yellow-600 transition-colors"
+          >
+            Reset to Default
+          </button>
         <button 
           type="button"
           className="bg-[#4F46E5] text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium w-full md:w-auto justify-center"
@@ -178,46 +118,43 @@ export default function MachineEvent() {
         </button>
       </div>
 
-      {/* Content Area */}
       <div className="p-4 md:p-6">
         <div className="bg-white rounded-lg shadow-sm">
-          {/* Tab and Filter Section */}
           <div className="p-4 md:p-6 border-b">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={`px-4 md:px-6 py-2 rounded-lg flex-1 md:flex-none text-center ${
-                activeTab === 'Event'
-                  ? 'bg-pink-100 text-pink-600'
-                  : 'hover:bg-gray-50'
-              }`}
-              onClick={() => handleTabChange('Event')}
-            >
-              Event
-            </button>
-            <button
-              type="button"
-              className={`px-4 md:px-6 py-2 rounded-lg flex-1 md:flex-none text-center ${
-                activeTab === 'Department'
-                  ? 'bg-pink-100 text-pink-600'
-                  : 'hover:bg-gray-50'
-              }`}
-              onClick={() => handleTabChange('Department')}
-            >
-              Department
-            </button>
-          </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`px-4 md:px-6 py-2 rounded-lg flex-1 md:flex-none text-center ${
+                  activeTab === 'Event'
+                    ? 'bg-pink-100 text-pink-600'
+                    : 'hover:bg-gray-50'
+                }`}
+                onClick={() => handleTabChange('Event')}
+              >
+                Event
+              </button>
+              <button
+                type="button"
+                className={`px-4 md:px-6 py-2 rounded-lg flex-1 md:flex-none text-center ${
+                  activeTab === 'Department'
+                    ? 'bg-pink-100 text-pink-600'
+                    : 'hover:bg-gray-50'
+                }`}
+                onClick={() => handleTabChange('Department')}
+              >
+                Department
+              </button>
+            </div>
           </div>
 
-          {/* Table Controls */}
           <div className="px-4 md:px-6 pt-6 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex items-center gap-2 w-full md:w-auto">
               <span className="text-gray-500 whitespace-nowrap">Show</span>
               <select
+                aria-label='button'
                 value={entriesPerPage}
                 onChange={(e) => setEntriesPerPage(Number(e.target.value))}
                 className="border rounded px-2 py-1 cursor-pointer w-20"
-                aria-label="Number of entries per page"
               >
                 <option value={10}>10</option>
                 <option value={25}>25</option>
@@ -237,7 +174,6 @@ export default function MachineEvent() {
             </div>
           </div>
 
-          {/* Table Container */}
           <div className="w-full h-[36.5rem] overflow-x-auto">
             <div className="min-w-[800px]">
               <div className="px-4 md:px-6">
@@ -261,7 +197,6 @@ export default function MachineEvent() {
                             type="button"
                             className="flex items-center gap-2 min-w-[120px] px-3 py-1 rounded hover:bg-gray-50"
                             onClick={() => toggleDropdown(transaction.id)}
-                            aria-label={`Change status of transaction ${transaction.id}`}
                           >
                             <div 
                               className={`w-2 h-2 rounded-full ${statusConfig[transaction.status].color}`}
@@ -274,7 +209,6 @@ export default function MachineEvent() {
                             )}
                           </button>
 
-                          {/* Status Dropdown Menu */}
                           {openDropdownId === transaction.id && (
                             <div className="absolute left-0 mt-1 w-[120px] bg-white border rounded-md shadow-lg z-10">
                               {Object.entries(statusConfig)
@@ -305,38 +239,33 @@ export default function MachineEvent() {
                         </td>
                         <td className="py-3 px-4 relative">
                           <button
+                            aria-label='button'
                             type="button"
                             className="text-gray-400 hover:text-gray-600 p-2 rounded-lg transition-colors"
-                            aria-label="More options"
                             onClick={() => toggleDropdown(`action_${transaction.id}`)}
                           >
                             <MoreHorizontal size={20} />
                           </button>
                         
-                          {/* Action Dropdown Menu */}
                           {openDropdownId === `action_${transaction.id}` && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20">
-                            <div className="py-1">
-                              {actionMenuItems(transactions).map((item) => ( // เรียกใช้ function แทน
-                                <button
-                                  key={item.label}
-                                  type="button"
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                                  onClick={() => {
-                                    if (item.onClick) {
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20">
+                              <div className="py-1">
+                                {actionMenuItems.map((item) => (
+                                  <button
+                                    key={item.label}
+                                    type="button"
+                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                    onClick={() => {
                                       item.onClick(transaction.id);
-                                    } else {
-                                      router.push(`${item.path}/${transaction.id}`);
-                                    }
-                                    setOpenDropdownId(null);
-                                  }}
-                                >
-                                  <span className="mr-3 text-gray-400">{item.icon}</span>
-                                  {item.label}
-                                </button>
-                              ))}
+                                      setOpenDropdownId(null);
+                                    }}
+                                  >
+                                    <span className="mr-3 text-gray-400">{item.icon}</span>
+                                    {item.label}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
                           )}
                         </td>
                       </tr>
@@ -347,15 +276,14 @@ export default function MachineEvent() {
             </div>
           </div>
 
-          {/* Pagination */}
           <div className="flex flex-col md:flex-row justify-between items-center p-4 md:px-6 gap-4 border-t">
             <div className="text-gray-500 text-center md:text-left text-sm md:text-base">
               Showing 1 to {entriesPerPage} of {transactions.length} entries
             </div>
             <div className="flex gap-1">
               <button 
+                aria-label='button'
                 className="p-2 border rounded hover:bg-gray-50 transition-colors"
-                aria-label="Previous page"
                 type="button"
               >
                 <ChevronLeft size={16} />
@@ -373,8 +301,8 @@ export default function MachineEvent() {
                 2
               </button>
               <button 
+                aria-label='button'
                 className="p-2 border rounded hover:bg-gray-50 transition-colors"
-                aria-label="Next page"
                 type="button"
               >
                 <ChevronRight size={16} />

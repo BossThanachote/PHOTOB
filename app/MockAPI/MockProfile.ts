@@ -1,14 +1,10 @@
-// mockApi.ts
-import Cookies from "js-cookie";
-
-// MockAPI/MockProfile.ts
-export interface Profile {
-  name: string;
-  email: string;
-  image: string;
-}
+import { Profile, ProfileAPI, TransactionAPI } from '@/types/types';
+import { eventAPI } from './mockEventAPI';
+import { departmentAPI } from './mockDepartmentAPI';
 
 const STORAGE_KEY = 'user_profile';
+const AUTH_TOKEN_KEY = 'auth_token';
+const SESSION_KEY = 'currentSession';
 
 const DEFAULT_PROFILE: Profile = {
   name: 'Admin name',
@@ -16,7 +12,7 @@ const DEFAULT_PROFILE: Profile = {
   image: '/default-profile.png'
 };
 
-// เพิ่มฟังก์ชันสำหรับจัดการ localStorage
+// Storage utilities
 const saveToStorage = (profile: Profile) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
@@ -37,13 +33,12 @@ const loadFromStorage = (): Profile | null => {
   return null;
 };
 
-export const profileAPI = {
+export const profileAPI: ProfileAPI = {
   getProfile: (): Profile | null => {
     if (!profileAPI.isAuthenticated()) {
       return null;
     }
 
-    // โหลดข้อมูลจาก localStorage ก่อน
     const savedProfile = loadFromStorage();
     if (savedProfile && savedProfile.email === 'loginkoakod@hotmail.com') {
       return savedProfile;
@@ -57,14 +52,27 @@ export const profileAPI = {
       throw new Error('Invalid email');
     }
 
-    // โหลดข้อมูลที่บันทึกไว้ (ถ้ามี)
-    const savedProfile = loadFromStorage();
-    const profile = savedProfile || DEFAULT_PROFILE;
+    // Set authentication
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ email }));
 
-    // บันทึกลง localStorage
-    saveToStorage(profile);
-    
-    return profile;
+    try {
+      // Load or create profile
+      const savedProfile = loadFromStorage();
+      const profile = savedProfile || DEFAULT_PROFILE;
+
+      // Save profile
+      saveToStorage(profile);
+
+      // Initialize transaction data
+      eventAPI.initialize();
+      departmentAPI.initialize();
+
+      return profile;
+    } catch (error) {
+      console.error('Error initializing profile:', error);
+      throw new Error('Failed to initialize profile');
+    }
   },
 
   updateProfileName: async (name: string): Promise<Profile | null> => {
@@ -72,13 +80,18 @@ export const profileAPI = {
       return null;
     }
 
-    const currentProfile = profileAPI.getProfile();
-    if (!currentProfile) return null;
+    try {
+      const currentProfile = profileAPI.getProfile();
+      if (!currentProfile) return null;
 
-    const updatedProfile = { ...currentProfile, name };
-    saveToStorage(updatedProfile);
-    
-    return updatedProfile;
+      const updatedProfile = { ...currentProfile, name };
+      saveToStorage(updatedProfile);
+
+      return updatedProfile;
+    } catch (error) {
+      console.error('Error updating profile name:', error);
+      return null;
+    }
   },
 
   updateProfileImage: async (image: string): Promise<Profile | null> => {
@@ -86,32 +99,81 @@ export const profileAPI = {
       return null;
     }
 
-    const currentProfile = profileAPI.getProfile();
-    if (!currentProfile) return null;
+    try {
+      const currentProfile = profileAPI.getProfile();
+      if (!currentProfile) return null;
 
-    const updatedProfile = { ...currentProfile, image };
-    saveToStorage(updatedProfile);
-    
-    return updatedProfile;
+      const updatedProfile = { ...currentProfile, image };
+      saveToStorage(updatedProfile);
+
+      return updatedProfile;
+    } catch (error) {
+      console.error('Error updating profile image:', error);
+      return null;
+    }
   },
 
   isAuthenticated: (): boolean => {
-    const token = localStorage.getItem('auth_token');
-    const session = localStorage.getItem('currentSession');
-
-    if (!token || !session) return false;
-
     try {
+      const token = localStorage.getItem(AUTH_TOKEN_KEY);
+      const session = localStorage.getItem(SESSION_KEY);
+
+      if (!token || !session) return false;
+
       const { email } = JSON.parse(session);
       return email === 'loginkoakod@hotmail.com' && token === 'mock_jwt_token';
-    } catch {
+    } catch (error) {
+      console.error('Error checking authentication:', error);
       return false;
     }
   },
 
   clearSession: () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('currentSession');
-    // ไม่ต้องลบ profile จาก localStorage เพื่อให้เก็บการตั้งค่าไว้สำหรับการ login ครั้งต่อไป
+    try {
+      // Clear authentication
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(SESSION_KEY);
+
+      // Clear transactions data
+      const profile = profileAPI.getProfile();
+      if (profile) {
+        eventAPI.clearStorage();
+        departmentAPI.clearStorage();
+      }
+    } catch (error) {
+      console.error('Error clearing session:', error);
+    }
+  },
+
+  resetAllData: () => {
+    try {
+      localStorage.clear();
+      window.location.reload();
+    } catch (error) {
+      console.error('Error resetting data:', error);
+    }
+  },
+
+  hasProfile: (): boolean => {
+    try {
+      return loadFromStorage() !== null;
+    } catch (error) {
+      console.error('Error checking profile existence:', error);
+      return false;
+    }
+  },
+
+  getCurrentEmail: (): string | null => {
+    try {
+      const session = localStorage.getItem(SESSION_KEY);
+      if (session) {
+        const { email } = JSON.parse(session);
+        return email;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting current email:', error);
+      return null;
+    }
   }
 };

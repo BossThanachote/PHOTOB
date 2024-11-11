@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import SideBar from '@/app/pages_admin/sidebar-form'
 import AuthGuard from '@/app/components/AuthGuard'
 import Image from 'next/image'
@@ -22,48 +22,51 @@ interface MachineInfo {
 
 export default function MachineInformation() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const machineId = params.id as string
+  const machineType = searchParams.get('type') as 'Event' | 'Department'
   const [machineInfo, setMachineInfo] = useState<MachineInfo | null>(null)
 
   useEffect(() => {
-    // ค้นหาข้อมูลจากทั้ง Event และ Department
-    const eventData = eventAPI.getTransactions()
-    const departmentData = departmentAPI.getTransactions()
+    const fetchMachineInfo = () => {
+      let machine;
 
-    // ค้นหาข้อมูลจาก Event ก่อน
-    let machine = eventData.find(t => t.id === machineId)
-    let type: 'Event' | 'Department' = 'Event'
+      // ค้นหาข้อมูลตาม type ที่ส่งมา
+      if (machineType === 'Event') {
+        machine = eventAPI.getTransactions().find(t => t.id === machineId);
+      } else if (machineType === 'Department') {
+        machine = departmentAPI.getTransactions().find(t => t.id === machineId);
+      }
 
-    // ถ้าไม่พบใน Event ให้ค้นหาใน Department
-    if (!machine) {
-      machine = departmentData.find(t => t.id === machineId)
-      type = 'Department'
+      if (machine) {
+        setMachineInfo({
+          id: machine.id,
+          name: `${machineType} ${machine.id}`, // เพิ่ม prefix ตาม type
+          ipAddress: '172.16.254.1',
+          type: machineType,
+          status: machine.status,
+          photo: '/path/to/photo',
+          totalUsage: 5020,
+          totalSales: machine.totalSale,
+          frames: [
+            { id: '1', image: '/frame1.png' },
+            { id: '2', image: '/frame2.png' }
+          ],
+          stickers: [
+            { id: '1', image: '/sticker1.png' },
+            { id: '2', image: '/sticker2.png' }
+          ]
+        });
+      }
+    };
+
+    if (machineId && machineType) {
+      fetchMachineInfo();
     }
+  }, [machineId, machineType]);
 
-    if (machine) {
-      setMachineInfo({
-        id: machine.id,
-        name: machine.id,
-        ipAddress: '172.16.254.1',
-        type: type,
-        status: machine.status,
-        photo: '/path/to/photo',
-        totalUsage: 5020,
-        totalSales: machine.totalSale,
-        frames: [
-          { id: '1', image: '/frame1.png' },
-          { id: '2', image: '/frame2.png' }
-        ],
-        stickers: [
-          { id: '1', image: '/sticker1.png' },
-          { id: '2', image: '/sticker2.png' }
-        ]
-      })
-    }
-  }, [machineId])
-
-  if (!machineInfo) {
-    return <div>Loading...</div>
+  if (!machineInfo || !machineType) {
+    return <div>Loading...</div>;
   }
 
   return (
@@ -214,5 +217,5 @@ export default function MachineInformation() {
         </div>
       </div>
     </AuthGuard>
-  )
+  );
 }

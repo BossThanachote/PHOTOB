@@ -1,53 +1,65 @@
 'use client'
-import { useState } from 'react'
-import { MoreHorizontal, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from 'lucide-react'
-
-interface Frame {
-  no: string
-  frameName: string
-  frame: string // URL of frame image
-  status: 'Active' | 'Disable'
-  shot: number
-  date: string
-}
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { MoreHorizontal, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Info, Edit, Trash2 } from 'lucide-react'
+import { Frame,frameAPI } from '../MockAPI/mockFrameApi'
+import UploadFrameModal from '../components/UploadFrame'
 
 export default function FrameManagement() {
+  const router = useRouter()
   const [entriesPerPage, setEntriesPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
+  const [frames, setFrames] = useState<Frame[]>([])
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
 
-  // Mock data
-  const [frames, setFrames] = useState<Frame[]>([
-    {
-      no: '001',
-      frameName: '3 Cut',
-      frame: '/frame1.png',
-      status: 'Active',
-      shot: 3,
-      date: '2023-04-05, 00:05PM'
-    },
-    {
-      no: '002',
-      frameName: '6 Cut',
-      frame: '/frame2.png',
-      status: 'Active',
-      shot: 6,
-      date: '2023-04-05, 00:05PM'
-    }
-  ])
+  // โหลดข้อมูล frames เมื่อ component mount
+  useEffect(() => {
+    const loadedFrames = frameAPI.getFrames()
+    setFrames(loadedFrames)
+  }, [])
 
   const toggleDropdown = (id: string) => {
     setOpenDropdownId(openDropdownId === id ? null : id)
   }
 
   const handleStatusChange = (frameId: string, newStatus: 'Active' | 'Disable') => {
-    setFrames(prevFrames => 
-      prevFrames.map(frame => 
-        frame.no === frameId 
-          ? { ...frame, status: newStatus }
-          : frame
+    const updatedFrame = frameAPI.updateFrameStatus(frameId, newStatus)
+    if (updatedFrame) {
+      setFrames(prevFrames =>
+        prevFrames.map(frame =>
+          frame.no === frameId ? updatedFrame : frame
+        )
       )
-    )
+    }
+    setOpenDropdownId(null)
+  }
+
+  const handleUpload = (frameData: { frame: string; status: 'Active' | 'Disable'; shot: number }) => {
+    const newFrame = frameAPI.addFrame({
+      frameName: `${frameData.shot} Cut`,
+      ...frameData
+    })
+    setFrames(prev => [...prev, newFrame])
+  }
+
+  const handleAction = (action: string, frameNo: string) => {
+    switch (action) {
+      case 'information':
+        router.push(`/admin/frame/information/${frameNo}`)
+        break
+      case 'edit':
+        router.push(`/admin/frame/edit/${frameNo}`)
+        break
+      case 'delete':
+        if (window.confirm('Are you sure you want to delete this frame?')) {
+          const success = frameAPI.deleteFrame(frameNo)
+          if (success) {
+            setFrames(prev => prev.filter(frame => frame.no !== frameNo))
+          }
+        }
+        break
+    }
     setOpenDropdownId(null)
   }
 
@@ -66,6 +78,7 @@ export default function FrameManagement() {
         <button
           type="button"
           className="bg-[#4F46E5] text-white px-4 py-2 rounded-lg flex items-center gap-2 w-full md:w-auto justify-center"
+          onClick={() => setIsUploadModalOpen(true)}
         >
           + UPLOAD
         </button>
@@ -198,14 +211,44 @@ export default function FrameManagement() {
                         </div>
                       </td>
                       <td className="py-4 px-4">{frame.date}</td>
-                      <td className="py-4 px-4">
+                      <td className="py-4 px-4 relative">
                         <button 
-                          type="button" 
                           aria-label='button'
+                          type="button" 
                           className="hover:bg-gray-100 p-2 rounded-lg transition-colors"
+                          onClick={() => toggleDropdown(`action_${frame.no}`)}
                         >
                           <MoreHorizontal size={20} className="text-gray-400" />
                         </button>
+
+                        {/* Action Dropdown */}
+                        {openDropdownId === `action_${frame.no}` && (
+                          <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg z-20">
+                            <div className="py-1">
+                              <button
+                                onClick={() => handleAction('information', frame.no)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                <Info size={16} className="mr-3 text-gray-400" />
+                                Information
+                              </button>
+                              <button
+                                onClick={() => handleAction('edit', frame.no)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                <Edit size={16} className="mr-3 text-gray-400" />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleAction('delete', frame.no)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                <Trash2 size={16} className="mr-3 text-gray-400" />
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -250,6 +293,13 @@ export default function FrameManagement() {
           </div>
         </div>
       </div>
+
+      {/* Upload Modal */}
+      <UploadFrameModal 
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onUpload={handleUpload}
+      />
     </div>
   )
 }

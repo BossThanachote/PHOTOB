@@ -100,7 +100,7 @@ export default function FilterManagement() {
             <div className="min-w-[800px]">
               <div className="px-4 md:px-10">
                 <table className="w-full">
-                  <thead>
+                  <thead>  
                     <tr className="border-y">
                       <th className="py-4 text-left font-medium">
                         <div className="flex items-center gap-1">
