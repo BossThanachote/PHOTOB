@@ -9,14 +9,14 @@ export interface Profile {
     no: string;
     stickerName: string;
     sticker: string;
-    status: 'Active' | 'Disable';
+    status: StatusType; // เปลี่ยนจาก 'Active' | 'Disable' เป็น StatusType
     date: string;
   }
-
+  
   export interface StickerUploadData {
     stickerName: string;
     sticker: string;
-    status: 'Active' | 'Disable';
+    status: StatusType; // เปลี่ยนตรงนี้ด้วย
   }
   
   export interface UploadStickerModalProps {

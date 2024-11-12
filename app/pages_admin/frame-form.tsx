@@ -78,7 +78,14 @@ export default function FrameManagement() {
         if (window.confirm('Are you sure you want to delete this frame?')) {
           const success = frameAPI.deleteFrame(frameNo)
           if (success) {
-            setFrames(prev => prev.filter(frame => frame.no !== frameNo))
+            // แทนที่จะใช้ filter ธรรมดา เราจะเรียงลำดับ no ใหม่เลย
+            setFrames(prev => 
+              prev.filter(frame => frame.no !== frameNo)
+                .map((frame, index) => ({
+                  ...frame,
+                  no: String(index + 1).padStart(3, '0')
+                }))
+            )
           }
         }
         break

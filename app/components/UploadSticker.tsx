@@ -1,18 +1,19 @@
 // components/UploadStickerModal.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { StatusType } from '@/types/types';
 
 interface UploadedFile {
   file: File;
   preview: string;
   progress: number;
-  status: 'Active' | 'Disable';
+  status: StatusType;
 }
 
 interface UploadStickerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpload: (stickers: { stickerName: string; sticker: string; status: 'Active' | 'Disable' }[]) => void;
+  onUpload: (stickers: { stickerName: string; sticker: string; status: StatusType }[]) => void;
 }
 
 export default function UploadStickerModal({ isOpen, onClose, onUpload }: UploadStickerModalProps) {
@@ -99,10 +100,12 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload }: Upload
     }
   };
 
-  const handleStatusChange = (index: number, status: 'Active' | 'Disable') => {
+  const handleStatusChange = (index: number, status: StatusType) => {
     setUploadedFiles(prev => {
       const newFiles = [...prev];
-      newFiles[index].status = status;
+      if (newFiles[index]) {
+        newFiles[index].status = status;
+      }
       return newFiles;
     });
   };
@@ -216,11 +219,12 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload }: Upload
                   <select
                     aria-label='button'
                     value={file.status}
-                    onChange={(e) => handleStatusChange(index, e.target.value as 'Active' | 'Disable')}
+                    onChange={(e) => handleStatusChange(index, e.target.value as StatusType)}
                     className="mt-2 border rounded-lg px-3 py-1.5"
                   >
                     <option value="Active">Active</option>
-                    <option value="Disable">Disable</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Declined">Declined</option>
                   </select>
                 )}
               </div>

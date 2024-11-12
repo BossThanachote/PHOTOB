@@ -2,19 +2,21 @@ import { Sticker } from '@/types/types';
 
 const STICKER_STORAGE_KEY = 'sticker_data';
 
+export type StatusType = 'Active' | 'Inactive' | 'Declined';
+
 const DEFAULT_STICKER_DATA: Sticker[] = [
   {
     no: '001',
     stickerName: 'Futuristic',
     sticker: '/sticker1.png',
-    status: 'Active',
+    status: 'Active' as StatusType,
     date: '2023-04-05, 00:05PM'
   },
   {
     no: '002',
     stickerName: 'Futuristic',
     sticker: '/sticker2.png',
-    status: 'Active',
+    status: 'Active' as StatusType,
     date: '2023-04-05, 00:05PM'
   }
 ];
@@ -22,7 +24,7 @@ const DEFAULT_STICKER_DATA: Sticker[] = [
 export interface StickerUploadData {
   stickerName: string;
   sticker: string;
-  status: 'Active' | 'Disable';
+  status: StatusType;
 }
 
 const getStorageKey = (email: string) => `${email}_${STICKER_STORAGE_KEY}`;
@@ -53,7 +55,6 @@ export const stickerAPI = {
       const { email } = JSON.parse(currentProfile);
       const currentStickers = stickerAPI.getStickers();
       
-      // เริ่มจาก ID ถัดจากลำดับสุดท้าย
       const startId = currentStickers.length;
       
       const stickerEntries: Sticker[] = newStickers.map((sticker, index) => ({
@@ -78,7 +79,7 @@ export const stickerAPI = {
     }
   },
 
-  updateStickerStatus: (stickerId: string, newStatus: 'Active' | 'Disable'): Sticker[] => {
+  updateStickerStatus: (stickerId: string, newStatus: StatusType): Sticker[] => {
     try {   
       const currentProfile = localStorage.getItem('adminProfile');
       if (!currentProfile) return [];
@@ -100,6 +101,28 @@ export const stickerAPI = {
     }
   },
 
+  updateSticker: (stickerId: string, updatedData: Partial<Sticker>): Sticker[] => {
+    try {
+      const currentProfile = localStorage.getItem('adminProfile');
+      if (!currentProfile) return [];
+
+      const { email } = JSON.parse(currentProfile);
+      const stickers = stickerAPI.getStickers();
+      
+      const updatedStickers = stickers.map(sticker => 
+        sticker.no === stickerId 
+          ? { ...sticker, ...updatedData }
+          : sticker
+      );
+
+      localStorage.setItem(getStorageKey(email), JSON.stringify(updatedStickers));
+      return updatedStickers;
+    } catch (error) {
+      console.error('Error updating sticker:', error);
+      return [];
+    }
+  },
+
   deleteSticker: (stickerId: string): Sticker[] => {
     try {
       const currentProfile = localStorage.getItem('adminProfile');
@@ -108,12 +131,10 @@ export const stickerAPI = {
       const { email } = JSON.parse(currentProfile);
       const currentStickers = stickerAPI.getStickers();
       
-      // ลบ sticker ที่เลือก
       const filteredStickers = currentStickers.filter(
         sticker => sticker.no !== stickerId
       );
 
-      // สร้าง array ใหม่พร้อมกับ reassign ID
       const updatedStickers = filteredStickers.map((sticker, index) => ({
         ...sticker,
         no: String(index + 1).padStart(3, '0')

@@ -130,11 +130,18 @@ export const frameAPI = {
   // ลบ Frame
   deleteFrame: (frameNo: string): boolean => {
     const frames = loadFromStorage()
-    const newFrames = frames.filter(f => f.no !== frameNo)
+    // ลบ frame ที่ต้องการ
+    const filteredFrames = frames.filter(f => f.no !== frameNo)
     
-    if (newFrames.length === frames.length) return false
+    if (filteredFrames.length === frames.length) return false
     
-    saveToStorage(newFrames)
+    // จัดเรียงเลข no ใหม่
+    const updatedFrames = filteredFrames.map((frame, index) => ({
+      ...frame,
+      no: String(index + 1).padStart(3, '0') // เริ่มจาก 1 และเติม 0 ข้างหน้าให้ครบ 3 หลัก
+    }))
+    
+    saveToStorage(updatedFrames)
     return true
   },
 

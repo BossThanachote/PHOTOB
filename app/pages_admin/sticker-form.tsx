@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { stickerAPI } from '../MockAPI/mockStickerApi'
 import UploadStickerModal from '../components/UploadSticker'
 import { MoreHorizontal, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Info, Edit, Trash2 } from 'lucide-react'
-import type { Sticker } from '@/types/types'
+import type { Sticker, StatusType } from '@/types/types'
 
 export default function StickerManagement() {
   const router = useRouter()
@@ -15,6 +15,20 @@ export default function StickerManagement() {
   const [stickers, setStickers] = useState<Sticker[]>([])
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
 
+  // Helper function for status colors
+  const getStatusColor = (status: StatusType) => {
+    switch (status) {
+      case 'Active':
+        return 'bg-green-500';
+      case 'Inactive':
+        return 'bg-orange-500';
+      case 'Declined':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
   // Load stickers when component mounts
   useEffect(() => {
     const loadedStickers = stickerAPI.getStickers()
@@ -22,16 +36,30 @@ export default function StickerManagement() {
   }, [])
 
   // Calculate paginated data
-  const paginatedStickers: Sticker[] = useMemo(() => {
-    const firstPageIndex = (currentPage - 1) * entriesPerPage
-    const lastPageIndex = firstPageIndex + entriesPerPage
-    return stickers.slice(firstPageIndex, lastPageIndex)
-  }, [currentPage, entriesPerPage, stickers])
+  const paginatedData = useMemo(() => {
+    // Filter data based on search term
+    const filteredData = stickers.filter(sticker =>
+      sticker.stickerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sticker.no.includes(searchTerm) ||
+      sticker.status.toLowerCase().includes(searchTerm.toLowerCase())
+    )
 
-  // คำนวณจำนวนหน้าทั้งหมด
-  const totalPages: number = useMemo(() => {
-    return Math.ceil(stickers.length / entriesPerPage)
-  }, [stickers.length, entriesPerPage])
+    const totalPages = Math.ceil(filteredData.length / entriesPerPage)
+    
+    // Adjust current page if it exceeds the total pages
+    if (currentPage > totalPages) {
+      setCurrentPage(Math.max(1, totalPages))
+    }
+
+    const startIndex = (currentPage - 1) * entriesPerPage
+    const endIndex = startIndex + entriesPerPage
+
+    return {
+      data: filteredData.slice(startIndex, endIndex),
+      totalItems: filteredData.length,
+      totalPages
+    }
+  }, [stickers, currentPage, entriesPerPage, searchTerm])
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber)
@@ -46,21 +74,19 @@ export default function StickerManagement() {
     setOpenDropdownId(openDropdownId === id ? null : id)
   }
 
-  const handleStatusChange = (stickerId: string, newStatus: 'Active' | 'Disable') => {
+  const handleStatusChange = (stickerId: string, newStatus: StatusType) => {
     const updatedStickers = stickerAPI.updateStickerStatus(stickerId, newStatus)
     setStickers(updatedStickers)
     setOpenDropdownId(null)
   }
 
-  const handleUpload = (stickersData: { stickerName: string; sticker: string; status: 'Active' | 'Disable' }[]) => {
+  const handleUpload = (stickersData: { stickerName: string; sticker: string; status: StatusType }[]) => {
     const updatedStickers = stickerAPI.addStickers(stickersData)
     setStickers(updatedStickers)
   }
 
   const handleSearch = (value: string) => {
     setSearchTerm(value)
-    const searchResults = stickerAPI.searchStickers(value)
-    setStickers(searchResults)
     setCurrentPage(1) // Reset to first page when searching
   }
 
@@ -111,7 +137,7 @@ export default function StickerManagement() {
             <div className="flex items-center gap-2 w-full md:w-auto">
               <span className="text-gray-500 whitespace-nowrap">Show</span>
               <select
-                aria-label='button'
+                aria-label='entries'
                 value={entriesPerPage}
                 onChange={(e) => handleEntriesChange(Number(e.target.value))}
                 className="border rounded px-2 py-1 w-20"
@@ -127,8 +153,8 @@ export default function StickerManagement() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="border rounded px-3 py-1 w-full md:w-[240px]"
-                placeholder="Search..."
+                className="border rounded-lg px-4 py-2 w-full md:w-[240px]"
+                placeholder="Search:"
               />
             </div>
           </div>
@@ -138,16 +164,31 @@ export default function StickerManagement() {
             <table className="w-full">
               <thead>
                 <tr className="border-y">
-                  <th className="py-4 px-4 text-left font-medium">No.</th>
-                  <th className="py-4 text-left font-medium">Sticker name</th>
+                  <th className="py-4 px-4 text-left font-medium">
+                    <div className="flex items-center gap-1">
+                      No.
+                      <ChevronUp size={16} className="text-gray-400" />
+                    </div>
+                  </th>
+                  <th className="py-4 text-left font-medium">
+                    <div className="flex items-center gap-1">
+                      Sticker name
+                      <ChevronUp size={16} className="text-gray-400" />
+                    </div>
+                  </th>
                   <th className="py-4 text-left font-medium">Sticker</th>
                   <th className="py-4 text-left font-medium">Status</th>
-                  <th className="py-4 text-left font-medium">Date</th>
+                  <th className="py-4 text-left font-medium">
+                    <div className="flex items-center gap-1">
+                      Date
+                      <ChevronUp size={16} className="text-gray-400" />
+                    </div>
+                  </th>
                   <th className="py-4 text-left font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedStickers.map((sticker) => (
+                {paginatedData.data.map((sticker) => (
                   <tr key={sticker.no} className="border-b">
                     <td className="py-4 px-4">{sticker.no}</td>
                     <td className="py-4">{sticker.stickerName}</td>
@@ -166,11 +207,7 @@ export default function StickerManagement() {
                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 min-w-[120px]"
                         onClick={() => toggleDropdown(sticker.no)}
                       >
-                        <div 
-                          className={`w-2 h-2 rounded-full ${
-                            sticker.status === 'Active' ? 'bg-green-500' : 'bg-red-500'
-                          }`}
-                        />
+                        <div className={`w-2 h-2 rounded-full ${getStatusColor(sticker.status)}`} />
                         <span>{sticker.status}</span>
                         {openDropdownId === sticker.no ? (
                           <ChevronUp size={16} className="text-gray-400" />
@@ -180,21 +217,19 @@ export default function StickerManagement() {
                       </button>
                       {openDropdownId === sticker.no && (
                         <div className="absolute z-10 mt-1 w-[120px] bg-white border rounded-md shadow-lg">
-                          <button
-                            type="button"
-                            className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-50"
-                            onClick={() => handleStatusChange(
-                              sticker.no,
-                              sticker.status === 'Active' ? 'Disable' : 'Active'
-                            )}
-                          >
-                            <div 
-                              className={`w-2 h-2 rounded-full ${
-                                sticker.status === 'Active' ? 'bg-red-500' : 'bg-green-500'
-                              }`}
-                            />
-                            {sticker.status === 'Active' ? 'Disable' : 'Active'}
-                          </button>
+                          {(['Active', 'Inactive', 'Declined'] as StatusType[])
+                            .filter(s => s !== sticker.status)
+                            .map((status) => (
+                              <button
+                                key={status}
+                                type="button"
+                                className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-50"
+                                onClick={() => handleStatusChange(sticker.no, status)}
+                              >
+                                <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />
+                                {status}
+                              </button>
+                            ))}
                         </div>
                       )}
                     </td>
@@ -247,7 +282,7 @@ export default function StickerManagement() {
           {/* Pagination */}
           <div className="flex flex-col md:flex-row justify-between items-center p-4 md:px-10 gap-4 border-t">
             <div className="text-gray-500 text-center md:text-left text-sm md:text-base">
-              Showing {(currentPage - 1) * entriesPerPage + 1} to {Math.min(currentPage * entriesPerPage, stickers.length)} of {stickers.length} entries
+              Showing {(currentPage - 1) * entriesPerPage + 1} to {Math.min(currentPage * entriesPerPage, paginatedData.totalItems)} of {paginatedData.totalItems} entries
             </div>
             <div className="flex gap-1">
               <button
@@ -258,7 +293,7 @@ export default function StickerManagement() {
               >
                 <ChevronLeft size={16} />
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+              {Array.from({ length: paginatedData.totalPages }, (_, i) => i + 1).map((pageNumber) => (
                 <button 
                   key={pageNumber}
                   className={`px-4 py-2 border rounded transition-colors ${
@@ -275,7 +310,7 @@ export default function StickerManagement() {
                 aria-label='button' 
                 className="p-2 border rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
+                disabled={currentPage === paginatedData.totalPages}
               >
                 <ChevronRight size={16} />
               </button>
