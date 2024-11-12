@@ -5,6 +5,26 @@ export interface Profile {
     image: string;
   }
   
+  export interface Sticker {
+    no: string;
+    stickerName: string;
+    sticker: string;
+    status: 'Active' | 'Disable';
+    date: string;
+  }
+
+  export interface StickerUploadData {
+    stickerName: string;
+    sticker: string;
+    status: 'Active' | 'Disable';
+  }
+  
+  export interface UploadStickerModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onUpload: (stickers: StickerUploadData[]) => void;
+  }
+
   export type StatusType = 'Active' | 'Inactive' | 'Declined';
   
   export interface Transaction {

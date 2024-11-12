@@ -1,5 +1,5 @@
 // components/UploadFrameModal.tsx
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { X } from 'lucide-react'
 
 interface UploadFrameModalProps {
@@ -16,7 +16,30 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload }: UploadFr
   const [shot, setShot] = useState(3)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  if (!isOpen) return null
+  // Reset states when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      resetModal()
+    }
+  }, [isOpen])
+
+  // Function to reset all states
+  const resetModal = () => {
+    setDragActive(false)
+    setUploadedFile(null)
+    setUploadProgress(0)
+    setStatus('Active')
+    setShot(3)
+    if (inputRef.current) {
+      inputRef.current.value = ''
+    }
+  }
+
+  // Handle closing with reset
+  const handleClose = () => {
+    resetModal()
+    onClose()
+  }
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -64,17 +87,18 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload }: UploadFr
 
   const handleSubmit = () => {
     if (uploadedFile && uploadProgress === 100) {
-      // In real application, you would upload the file to a server
-      // Here we're just using a local URL
       const fileUrl = URL.createObjectURL(uploadedFile)
       onUpload({
         frame: fileUrl,
         status,
         shot
       })
+      resetModal()
       onClose()
     }
   }
+
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -82,7 +106,7 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload }: UploadFr
         <div className="flex justify-end items-center mb-4">
           <button
             aria-label='button' 
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X size={20} />
@@ -200,7 +224,7 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload }: UploadFr
           </button>
           <div className="space-x-2">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 border rounded-lg hover:bg-gray-50"
             >
               Cancel

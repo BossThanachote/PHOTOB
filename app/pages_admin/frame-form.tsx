@@ -1,19 +1,33 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { MoreHorizontal, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Info, Edit, Trash2 } from 'lucide-react'
-import { Frame,frameAPI } from '../MockAPI/mockFrameApi'
+import { Frame, frameAPI } from '../MockAPI/mockFrameApi'
 import UploadFrameModal from '../components/UploadFrame'
 
 export default function FrameManagement() {
   const router = useRouter()
+  const [currentPage, setCurrentPage] = useState(1)
   const [entriesPerPage, setEntriesPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
   const [frames, setFrames] = useState<Frame[]>([])
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
 
-  // โหลดข้อมูล frames เมื่อ component mount
+  
+  // Calculate paginated data
+  const paginatedFrames = useMemo(() => {
+    const firstPageIndex = (currentPage - 1) * entriesPerPage
+    const lastPageIndex = firstPageIndex + entriesPerPage
+    return frames.slice(firstPageIndex, lastPageIndex)
+  }, [currentPage, entriesPerPage, frames])
+
+  // Calculate total pages
+  const totalPages = useMemo(() => {
+    return Math.ceil(frames.length / entriesPerPage)
+  }, [frames.length, entriesPerPage])
+
+  // Load frames when component mounts
   useEffect(() => {
     const loadedFrames = frameAPI.getFrames()
     setFrames(loadedFrames)
@@ -21,6 +35,15 @@ export default function FrameManagement() {
 
   const toggleDropdown = (id: string) => {
     setOpenDropdownId(openDropdownId === id ? null : id)
+  }
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber)
+  }
+
+  const handleEntriesChange = (value: number) => {
+    setEntriesPerPage(value)
+    setCurrentPage(1) // Reset to first page when changing entries per page
   }
 
   const handleStatusChange = (frameId: string, newStatus: 'Active' | 'Disable') => {
@@ -46,10 +69,10 @@ export default function FrameManagement() {
   const handleAction = (action: string, frameNo: string) => {
     switch (action) {
       case 'information':
-        router.push(`/admin/frame/information/${frameNo}`)
+        router.push(`/admin/management/frame/information/${frameNo}`)
         break
       case 'edit':
-        router.push(`/admin/frame/edit/${frameNo}`)
+        router.push(`/admin/management/frame/edit/${frameNo}`)
         break
       case 'delete':
         if (window.confirm('Are you sure you want to delete this frame?')) {
@@ -94,7 +117,7 @@ export default function FrameManagement() {
               <select
                 aria-label='entries'
                 value={entriesPerPage}
-                onChange={(e) => setEntriesPerPage(Number(e.target.value))}
+                onChange={(e) => handleEntriesChange(Number(e.target.value))}
                 className="border rounded px-2 py-1 w-20"
               >
                 <option value={10}>10</option>
@@ -145,27 +168,18 @@ export default function FrameManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {frames.map((frame) => (
+                  {paginatedFrames.map((frame) => (
                     <tr key={frame.no} className="border-b">
                       <td className="py-4 px-4 md:px-11">{frame.no}</td>
                       <td className="py-4 px-4">{frame.frameName}</td>
                       <td className="py-4 px-4">
-                        {frame.frameName === '3 Cut' ? (
-                          <div className="w-12 h-12 border grid grid-cols-2 grid-rows-2">
-                            <div className="col-span-1 row-span-2 bg-black"></div>
-                            <div className="border-b"></div>
-                            <div></div>
-                          </div>
-                        ) : (
-                          <div className="w-12 h-12 border grid grid-rows-3 grid-cols-2">
-                            <div className="border-b"></div>
-                            <div className="border-b border-l"></div>
-                            <div className="border-b"></div>
-                            <div className="border-b border-l"></div>
-                            <div></div>
-                            <div className="border-l"></div>
-                          </div>
-                        )}
+                        <div className="w-12 h-12 border rounded-lg overflow-hidden">
+                          <img 
+                            src={frame.frame} 
+                            alt={`Frame ${frame.frameName}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
                       </td>
                       <td className="py-4 px-4 relative">
                         <button
@@ -260,32 +274,38 @@ export default function FrameManagement() {
           {/* Pagination */}
           <div className="flex flex-col md:flex-row justify-between items-center p-4 md:px-10 gap-4 border-t">
             <div className="text-gray-500 text-center md:text-left text-sm md:text-base">
-              Showing 1 to {entriesPerPage} of {frames.length} entries
+              Showing {(currentPage - 1) * entriesPerPage + 1} to {Math.min(currentPage * entriesPerPage, frames.length)} of {frames.length} entries
             </div>
             <div className="flex gap-1">
               <button 
-                className="p-2 border rounded hover:bg-gray-50 transition-colors"
+                className="p-2 border rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
                 aria-label="Previous page"
                 type="button"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
               >
                 <ChevronLeft size={16} />
               </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+                <button 
+                  key={pageNumber}
+                  className={`px-4 py-2 border rounded transition-colors ${
+                    pageNumber === currentPage 
+                      ? 'bg-[#4F46E5] text-white hover:bg-[#4338CA]' 
+                      : 'hover:bg-gray-50'
+                  }`}
+                  type="button"
+                  onClick={() => handlePageChange(pageNumber)}
+                >
+                  {pageNumber}
+                </button>
+              ))}
               <button 
-                className="px-4 py-2 border rounded bg-[#4F46E5] text-white hover:bg-[#4338CA] transition-colors"
-                type="button"
-              >
-                1
-              </button>
-              <button 
-                className="px-4 py-2 border rounded hover:bg-gray-50 transition-colors"
-                type="button"
-              >
-                2
-              </button>
-              <button 
-                className="p-2 border rounded hover:bg-gray-50 transition-colors"
+                className="p-2 border rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
                 aria-label="Next page"
                 type="button"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
               >
                 <ChevronRight size={16} />
               </button>
