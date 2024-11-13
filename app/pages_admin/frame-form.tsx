@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { MoreHorizontal, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Info, Edit, Trash2 } from 'lucide-react'
-import { Frame, frameAPI } from '../MockAPI/mockFrameApi'
+import { Frame, frameAPI, StatusType } from '../MockAPI/mockFrameApi'
 import UploadFrameModal from '../components/UploadFrame'
 
 export default function FrameManagement() {
@@ -14,7 +14,6 @@ export default function FrameManagement() {
   const [frames, setFrames] = useState<Frame[]>([])
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
 
-  
   // Calculate paginated data
   const paginatedFrames = useMemo(() => {
     const firstPageIndex = (currentPage - 1) * entriesPerPage
@@ -46,7 +45,34 @@ export default function FrameManagement() {
     setCurrentPage(1) // Reset to first page when changing entries per page
   }
 
-  const handleStatusChange = (frameId: string, newStatus: 'Active' | 'Disable') => {
+  // Get color for status
+  const getStatusColor = (status: StatusType) => {
+    switch (status) {
+      case 'Active':
+        return 'bg-green-500'
+      case 'Inactive':
+        return 'bg-orange-500'
+      case 'Declined':
+        return 'bg-red-500'
+      default:
+        return 'bg-gray-500'
+    }
+  }
+
+  const getStatusBgColor = (status: StatusType) => {
+    switch (status) {
+      case 'Active':
+        return 'border-[1px] py-2 px-[1.5rem]'
+      case 'Inactive':
+        return 'border-[1px] py-2 px-[1.5rem]'
+      case 'Declined':
+        return 'border-[1px] py-2 px-[1.5rem]'
+      default:
+        return 'border-[1px] py-2 px-[1.5rem]'
+    }
+  }
+
+  const handleStatusChange = (frameId: string, newStatus: StatusType) => {
     const updatedFrame = frameAPI.updateFrameStatus(frameId, newStatus)
     if (updatedFrame) {
       setFrames(prevFrames =>
@@ -58,7 +84,7 @@ export default function FrameManagement() {
     setOpenDropdownId(null)
   }
 
-  const handleUpload = (frameData: { frame: string; status: 'Active' | 'Disable'; shot: number }) => {
+  const handleUpload = (frameData: { frame: string; status: StatusType; shot: number }) => {
     const newFrame = frameAPI.addFrame({
       frameName: `${frameData.shot} Cut`,
       ...frameData
@@ -78,7 +104,6 @@ export default function FrameManagement() {
         if (window.confirm('Are you sure you want to delete this frame?')) {
           const success = frameAPI.deleteFrame(frameNo)
           if (success) {
-            // แทนที่จะใช้ filter ธรรมดา เราจะเรียงลำดับ no ใหม่เลย
             setFrames(prev => 
               prev.filter(frame => frame.no !== frameNo)
                 .map((frame, index) => ({
@@ -191,14 +216,10 @@ export default function FrameManagement() {
                       <td className="py-4 px-4 relative">
                         <button
                           type="button"
-                          className="flex items-center gap-2 min-w-[120px] px-3 py-1 rounded-lg bg-gray-50"
+                          className={`flex items-center gap-2 min-w-[120px] px-3 py-1 rounded-lg ${getStatusBgColor(frame.status)}`}
                           onClick={() => toggleDropdown(frame.no)}
                         >
-                          <div 
-                            className={`w-2 h-2 rounded-full ${
-                              frame.status === 'Active' ? 'bg-green-500' : 'bg-red-500'
-                            }`}
-                          />
+                          <div className={`w-2 h-2 rounded-full ${getStatusColor(frame.status)}`} />
                           <span>{frame.status}</span>
                           {openDropdownId === frame.no ? (
                             <ChevronUp size={16} className="text-gray-400" />
@@ -208,21 +229,19 @@ export default function FrameManagement() {
                         </button>
                         {openDropdownId === frame.no && (
                           <div className="absolute z-10 mt-1 w-[120px] bg-white border rounded-md shadow-lg">
-                            <button
-                              type="button"
-                              className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-50"
-                              onClick={() => handleStatusChange(
-                                frame.no, 
-                                frame.status === 'Active' ? 'Disable' : 'Active'
-                              )}
-                            >
-                              <div 
-                                className={`w-2 h-2 rounded-full ${
-                                  frame.status === 'Active' ? 'bg-red-500' : 'bg-green-500'
-                                }`}
-                              />
-                              {frame.status === 'Active' ? 'Disable' : 'Active'}
-                            </button>
+                            {(['Active', 'Inactive', 'Declined'] as StatusType[]).map((status) => (
+                              status !== frame.status && (
+                                <button
+                                  key={status}
+                                  type="button"
+                                  className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-50"
+                                  onClick={() => handleStatusChange(frame.no, status)}
+                                >
+                                  <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />
+                                  {status}
+                                </button>
+                              )
+                            ))}
                           </div>
                         )}
                       </td>

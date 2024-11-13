@@ -29,6 +29,19 @@ export default function StickerManagement() {
     }
   };
 
+  const getStatusBgColor = (status: StatusType) => {
+    switch (status) {
+      case 'Active':
+        return 'border-[1px] py-2 px-[1.5rem]'
+      case 'Inactive':
+        return 'border-[1px] py-2 px-[1.5rem]'
+      case 'Declined':
+        return 'border-[1px] py-2 px-[1.5rem]'
+      default:
+        return 'border-[1px] py-2 px-[1.5rem]'
+    }
+  }
+
   // Load stickers when component mounts
   useEffect(() => {
     const loadedStickers = stickerAPI.getStickers()

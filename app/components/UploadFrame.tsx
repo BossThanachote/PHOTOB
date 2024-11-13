@@ -1,18 +1,19 @@
 // components/UploadFrameModal.tsx
 import React, { useState, useRef, useEffect } from 'react'
 import { X } from 'lucide-react'
+import { StatusType } from '../MockAPI/mockFrameApi'
 
 interface UploadFrameModalProps {
   isOpen: boolean
   onClose: () => void
-  onUpload: (frameData: { frame: string; status: 'Active' | 'Disable'; shot: number }) => void
+  onUpload: (frameData: { frame: string; status: StatusType; shot: number }) => void
 }
 
 export default function UploadFrameModal({ isOpen, onClose, onUpload }: UploadFrameModalProps) {
   const [dragActive, setDragActive] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [status, setStatus] = useState<'Active' | 'Disable'>('Active')
+  const [status, setStatus] = useState<StatusType>('Active')
   const [shot, setShot] = useState(3)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -103,15 +104,15 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload }: UploadFr
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-[820px] h-[740px]">
-        <div className="flex justify-end items-center mb-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-medium">Upload Frame</h2>
           <button
-            aria-label='button' 
+            aria-label='close'
             onClick={handleClose}
             className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X size={20} />
           </button>
-          <h2 className="text-2xl font-medium">Upload Frame</h2>
         </div>
         <h3 className='text-[#8E8E93]'>Drag or drop your file here</h3>
         <div
@@ -142,12 +143,12 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload }: UploadFr
                 Supports: PNG, JPG, JPEG, WEBP
               </p>
               <input
-                aria-label='button'
                 ref={inputRef}
                 type="file"
                 className="hidden"
                 accept="image/*"
                 onChange={handleChange}
+                aria-label="File upload input"
               />
             </>
           ) : (
@@ -168,7 +169,7 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload }: UploadFr
                 </div>
                 {uploadProgress === 100 && (
                   <button
-                    aria-label='button'
+                    aria-label='remove file'
                     onClick={() => setUploadedFile(null)}
                     className="text-red-500 hover:text-red-600"
                   >
@@ -182,19 +183,20 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload }: UploadFr
                   <div>
                     <label className="block text-sm font-medium mb-1">Status</label>
                     <select
-                      aria-label='button'
+                      aria-label='status selection'
                       value={status}
-                      onChange={(e) => setStatus(e.target.value as 'Active' | 'Disable')}
+                      onChange={(e) => setStatus(e.target.value as StatusType)}
                       className="w-full border rounded-lg px-3 py-2"
                     >
                       <option value="Active">Active</option>
-                      <option value="Disable">Disable</option>
+                      <option value="Inactive">Inactive</option>
+                      <option value="Declined">Declined</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">Shot</label>
                     <select
-                      aria-label='button'
+                      aria-label='shot selection'
                       value={shot}
                       onChange={(e) => setShot(Number(e.target.value))}
                       className="w-full border rounded-lg px-3 py-2"

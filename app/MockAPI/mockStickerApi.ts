@@ -1,8 +1,7 @@
-import { Sticker } from '@/types/types';
+// mockApi/mockStickerApi.ts
+import { Sticker, StatusType, StickerUploadData } from '@/types/types';
 
 const STICKER_STORAGE_KEY = 'sticker_data';
-
-export type StatusType = 'Active' | 'Inactive' | 'Declined';
 
 const DEFAULT_STICKER_DATA: Sticker[] = [
   {
@@ -21,12 +20,6 @@ const DEFAULT_STICKER_DATA: Sticker[] = [
   }
 ];
 
-export interface StickerUploadData {
-  stickerName: string;
-  sticker: string;
-  status: StatusType;
-}
-
 const getStorageKey = (email: string) => `${email}_${STICKER_STORAGE_KEY}`;
 
 export const stickerAPI = {
@@ -44,6 +37,17 @@ export const stickerAPI = {
     } catch (error) {
       console.error('Error loading stickers:', error);
       return DEFAULT_STICKER_DATA;
+    }
+  },
+
+  // เพิ่มเมธอด getStickerById
+  getStickerById: (stickerId: string): Sticker | null => {
+    try {
+      const stickers = stickerAPI.getStickers();
+      return stickers.find(sticker => sticker.no === stickerId) || null;
+    } catch (error) {
+      console.error('Error getting sticker by id:', error);
+      return null;
     }
   },
 

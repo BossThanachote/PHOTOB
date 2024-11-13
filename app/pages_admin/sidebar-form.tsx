@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Image from "next/image"
 import { Pencil, Camera, Check, X } from "lucide-react"
-import { Profile, profileAPI } from "../MockAPI/MockProfile";
+import { profileAPI } from "../MockAPI/MockProfile";
+import { Profile } from "@/types/types"
 
 export default function SideBar() {
   const router = useRouter()
