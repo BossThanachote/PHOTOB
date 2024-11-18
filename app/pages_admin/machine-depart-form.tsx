@@ -110,6 +110,7 @@ export default function MachineDepart() {
           Reset to Default
         </button>
         <button 
+          onClick={() => router.push('/admin/machine/addmachine')}
           type="button"
           className="bg-[#4F46E5] text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium w-full md:w-auto justify-center"
         >

@@ -20,7 +20,7 @@ const statusConfig = {
   },
 };
  
-export default function MachineEvent() {
+export default function MachineDashEvent() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'Event' | 'Department'>('Event')
   const [entriesPerPage, setEntriesPerPage] = useState(10)
@@ -50,9 +50,9 @@ export default function MachineEvent() {
   const handleTabChange = (tab: 'Event' | 'Department') => {
     setActiveTab(tab);
     if (tab === 'Event') {
-      router.push('/admin/machine/event');
+      router.push('/admin/dashboard/event');
     } else {
-      router.push('/admin/machine/department');
+      router.push('/admin/dashboard/department');
     }
   };
 
@@ -73,7 +73,7 @@ export default function MachineEvent() {
         const machineData = transactions.find(t => t.id === id);
         if (machineData) {
           localStorage.setItem('selectedMachineData', JSON.stringify(machineData));
-          router.push(`/admin/machine/${activeTab.toLowerCase()}/information/${id}?type=${activeTab}`);
+          router.push(`/admin/dashboard/${activeTab.toLowerCase()}/information/${id}?type=${activeTab}`);
         }
       }
     },
@@ -83,7 +83,7 @@ export default function MachineEvent() {
         <path strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
       </svg>,
       onClick: (id: string) => {
-        router.push(`/admin/machine/event/edit/${id}`);
+        router.push(`/admin/dashboard/event/edit/${id}`);
       }
     },
     {
@@ -102,7 +102,7 @@ export default function MachineEvent() {
   return (
     <div className="min-h-screen bg-[#F7F7F7] select-none">
       <div className="h-auto min-h-[4rem] bg-white flex flex-col md:flex-row justify-between items-start md:items-center p-4 md:px-6 shadow-sm gap-4">
-        <h1 className="text-xl font-medium">Machine</h1>
+        <h1 className="text-xl font-medium">Dashboard</h1>
         <button 
             type="button"
             onClick={handleResetData}
@@ -111,7 +111,7 @@ export default function MachineEvent() {
             Reset to Default
           </button>
         <button 
-          onClick={() => router.push('/admin/machine/addmachine')}
+          onClick={() => router.push('/admin/dashboard/addmachine')}
           type="button"
           className="bg-[#4F46E5] text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium w-full md:w-auto justify-center"
         >

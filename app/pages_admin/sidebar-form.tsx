@@ -136,7 +136,7 @@ export default function SideBar() {
       
       switch(menu) {
         case 'dashboard':
-          router.push('/admin/dashboard')
+          router.push('/admin/dashboard/event')
           break
         case 'machine':
           router.push('/admin/machine/event')

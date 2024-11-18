@@ -2,10 +2,9 @@
 
 import AuthGuard from "@/app/components/AuthGuard";
 import SideBar from "@/app/pages_admin/sidebar-form";
-import Dashboard from "@/app/pages_admin/dash-form";
-import MachineDashEvent from "@/app/pages_admin/dash-event";
+import MachineDashDepart from "@/app/pages_admin/dash-depart";
 
-export default function AdminDashboard() {
+export default function AdminMachineDepart() {
   return (
     <AuthGuard>
       <div className="grid grid-cols-10 w-full h-screen">
@@ -13,7 +12,7 @@ export default function AdminDashboard() {
           <SideBar />
         </div>
         <div className="sm:col-span-7 xl:col-span-8 col-span-10">
-          <MachineDashEvent />
+          <MachineDashDepart />
         </div>
       </div>
     </AuthGuard>

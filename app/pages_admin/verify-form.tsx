@@ -13,7 +13,7 @@ export default function Verify() {
  )
 }
 
-function VerifyContent() {
+function VerifyContent() { 
 
  // Mock API function for verifying code
  const mockVerifyCode = async (email: string, code: string): Promise<{ success: boolean; message: string }> => {
@@ -51,10 +51,9 @@ function VerifyContent() {
  const [timer, setTimer] = useState(12);
  const [canResend, setCanResend] = useState(false);
  const [isResending, setIsResending] = useState(false);
- 
+  
  const inputRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null),
                    useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
-
  const handleCodeChange = (index: number, value: string) => {
    if (!/^\d*$/.test(value)) return;
 
