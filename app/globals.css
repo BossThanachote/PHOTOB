@@ -36,6 +36,11 @@ html{
   font-weight: 700;
 }
 
+.font-ibm-thai-600{
+  font-family: var(--font-ibm-thai);
+  font-weight: 600;
+}
+
 .font-ibm-thai-500 {
   font-family: var(--font-ibm-thai);
   font-weight: 500;

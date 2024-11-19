@@ -18,6 +18,7 @@ interface DropItem {
 const state = proxy({
     intro: 1,
     color: "#EFBD48",
+    editedImageUrl: '',
     selectedDiv: 1,
     quantity : 1,
     language: "EN",

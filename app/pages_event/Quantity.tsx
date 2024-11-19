@@ -36,29 +36,40 @@ export default function Quantity(){
   const handleNext = async () => {
     const dropAreaElement = dropAreaRef.current;
     if (dropAreaElement) {
-      // เพิ่ม filterColor เข้าไปในสไตล์ของ dropAreaElement โดยตรง
+        const canvas = await html2canvas(dropAreaElement);
+        const imageData = canvas.toDataURL("image/png"); 
 
-  
-      const canvas = await html2canvas(dropAreaElement);
-      const imageURL = canvas.toDataURL("image/png");
-  
-      // บันทึก imageURL ลงใน state ของ valtio
-      state.savedDropAreaImage = imageURL;
-  
+        
+        const response = await fetch("/api/saveImage", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ image: imageData }),
+        });
 
+        if (response.ok) {
+            const result = await response.json();
+            console.log("Image saved at:", result.url);
+            state.savedDropAreaImage = result.url; 
+        } else {
+            console.error("Failed to save image");
+        }
     }
-    
+
     setIsVisible(false);
     setTimeout(() => {
-      state.intro = 5;
-      setIsVisible(true);
+        state.intro = 5;
+        setIsVisible(true);
     }, 1200);
-  };
+};
+
+
 
     const handleBack = () => {
       state.savedDropAreaImage = null; // หรือถ้าใช้เป็นอาเรย์ ก็ใช้ state.imageSrcs = [];
       state.imageSrcs = [];
-      state.selectedImages = []; //
+      state.selectedImages = []; 
     
         setIsVisible(false); 
     

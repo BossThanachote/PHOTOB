@@ -1,5 +1,5 @@
 'use client'
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useTime } from "framer-motion";
 import state from "../valtio_config";
 import { useSnapshot } from "valtio";
 import { IoIosArrowDropleft } from "react-icons/io";
@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { div } from "framer-motion/client";
 import { QRCode } from 'antd';
+import { DiSmashingMagazine } from "react-icons/di";
 
 const formatDate = () => {
     const today = new Date();
@@ -43,6 +44,7 @@ export default function Download(){
         return () => clearInterval(timer);
     }, [snap.intro]);
 
+    
     useEffect(() => {
         // เมื่อ countdown ถึง 0 ให้แสดง Timeout 2 วินาที จากนั้นเปลี่ยนเป็น intro = 6
         if (countdown === 0) {
@@ -101,8 +103,8 @@ export default function Download(){
                             className="font-bebas-neue-400 md:text-[1.7rem] text-[1.3rem] lg:text-[2rem] select-none text-center"
                             style={{ letterSpacing: '10px' }}
                             initial={{ y: -100, opacity: 0 }} 
-                          animate={{ y: 0, opacity: 1 }} 
-                          transition={{
+                            animate={{ y: 0, opacity: 1 }} 
+                            transition={{
                             type: 'spring',
                             stiffness: 300,
                             damping: 20,
@@ -242,6 +244,7 @@ export default function Download(){
                                     </div>
                                 </div>
                             </div>
+                          
                         </motion.div>
                 </div>
             )}
