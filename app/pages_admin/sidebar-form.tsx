@@ -3,8 +3,13 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Image from "next/image"
 import { Pencil, Camera, Check, X } from "lucide-react"
-import { profileAPI } from "../MockAPI/MockProfile";
-import { Profile } from "@/types/types"
+import Cookies from 'js-cookie'
+
+type UserProfile = {
+  name: string;
+  email: string;
+  image?: string;
+}
 
 export default function SideBar() {
   const router = useRouter()
@@ -13,41 +18,37 @@ export default function SideBar() {
   const [showManageSubmenu, setShowManageSubmenu] = useState(false)
   const [selectedSubmenu, setSelectedSubmenu] = useState('')
   
-  // กำหนดค่าเริ่มต้นของ Profile
-  const defaultProfile: Profile = {
-    name: 'Admin name',
-    email: 'loginkoakod@hotmail.com',
-    image: '/default-profile.png'
-  }
-  
-  const [profile, setProfile] = useState<Profile>(defaultProfile)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [editName, setEditName] = useState(defaultProfile.name)
+  const [editName, setEditName] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    // ตรวจสอบ authentication
-    const isAuth = profileAPI.isAuthenticated();
-    const currentProfile = profileAPI.getProfile();
-    
-    if (!isAuth || !currentProfile) {
-      profileAPI.clearSession();
-      router.push('/admin/signin');
-      return;
+    const token = Cookies.get('auth_token')
+    const userData = Cookies.get('user_data')
+
+    if (!token || !userData) {
+      router.push('/admin/signin')
+      return
     }
 
-    setProfile(currentProfile);
-    setEditName(currentProfile.name);
-  }, [router]);
+    try {
+      const parsedUserData = JSON.parse(userData)
+      setProfile(parsedUserData)
+      setEditName(parsedUserData.name)
+    } catch (error) {
+      console.error('Error parsing user data:', error)
+      router.push('/admin/signin')
+    }
+  }, [router])
 
-  // อัพเดท selected menu ตาม pathname
   useEffect(() => {
     const path = pathname.split('/')
     const currentPath = path[path.length - 1]
     if (path.includes('machine')) {
       setSelectedMenu('machine')
       setShowManageSubmenu(false)
-      return; // ออกจาก effect ทันทีถ้าเป็น path machine
+      return
     }
 
     switch(currentPath) {
@@ -79,47 +80,30 @@ export default function SideBar() {
     }
   }, [pathname])
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      try {
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const base64String = reader.result as string;
-            resolve(base64String);
-          };
-          reader.readAsDataURL(file);
-        });
-        
-        const updatedProfile = await profileAPI.updateProfileImage(base64);
-        if (updatedProfile) {
-          setProfile(updatedProfile);
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error)
-      }
-    }
-  }
-
   const handleEditName = () => {
     setIsEditing(true)
   }
 
-  const handleSaveName = async () => {
-    try {
-      const updatedProfile = await profileAPI.updateProfileName(editName);
-      if (updatedProfile) {
-        setProfile(updatedProfile);
-        setIsEditing(false);
-      }
-    } catch (error) {
-      console.error('Error saving name:', error)
-    }
+  const handleSaveName = () => {
+    if (!profile) return
+    
+    const updatedProfile = { ...profile, name: editName }
+    setProfile(updatedProfile)
+    
+    // Update in cookies
+    Cookies.set('user_data', JSON.stringify(updatedProfile), {
+      path: '/',
+      secure: true,
+      sameSite: 'lax'
+    })
+    
+    setIsEditing(false)
   }
 
   const handleCancelEdit = () => {
-    setEditName(profile.name)
+    if (profile) {
+      setEditName(profile.name)
+    }
     setIsEditing(false)
   }
 
@@ -175,13 +159,16 @@ export default function SideBar() {
     return `flex w-[85%] h-[2.5rem] rounded-md justify-start items-center pl-4 cursor-pointer transition-colors ${
       selectedSubmenu === submenu ? 'bg-[#1E293B] text-[#F7F7F7]' : 'text-[#8E8E93] hover:bg-[#1E293B] hover:text-[#F7F7F7]'
     }`
-    
+  }
+
+  // ถ้ายังไม่มีข้อมูล profile ให้แสดง loading หรือ return null
+  if (!profile) {
+    return null
   }
 
   return(
     <div className="bg-black h-[60rem] w-full text-white select-none font-ibm-thai-400 sticky top-0">
       <div className="flex flex-col 2xl:flex-row justify-start xl:pl-10 items-center w-full h-[10rem] 2xl:pt-0 pt-5">
-        {/* Profile Image Section */}
         <div className="relative group">
           <img 
             src={profile.image} 
@@ -199,42 +186,32 @@ export default function SideBar() {
             ref={fileInputRef}
             className="hidden"
             accept="image/*"
-            onChange={handleImageUpload}
             aria-label="Upload profile image"
-            title="Choose a profile image"
           />
         </div>
 
-        {/* Profile Info Section */}
         <div className="flex flex-col ml-4 text-[#F7F7F7]">
           <div className="flex items-center justify-center 2xl:justify-start gap-2">
             {isEditing ? (
-              <div className="flex items-center  gap-2">
+              <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   className="bg-transparent border-b border-gray-400 outline-none px-1 text-white"
                   autoFocus
-                  aria-label="Edit profile name"
-                  title="Enter your name"
-                  placeholder="Enter your name"
                 />
                 <button 
                   type="button"
-                  onClick={handleSaveName} 
+                  onClick={handleSaveName}
                   className="text-green-500 hover:text-green-400"
-                  aria-label="Save name"
-                  title="Save changes"
                 >
                   <Check size={16} />
                 </button>
                 <button 
                   type="button"
-                  onClick={handleCancelEdit} 
+                  onClick={handleCancelEdit}
                   className="text-red-500 hover:text-red-400"
-                  aria-label="Cancel editing"
-                  title="Cancel changes"
                 >
                   <X size={16} />
                 </button>
@@ -244,7 +221,6 @@ export default function SideBar() {
                 <span>{profile.name}</span>
                 <button
                   type="button"
-                  aria-label="editname" 
                   onClick={handleEditName}
                   className="text-gray-400 hover:text-gray-300"
                 >
@@ -257,7 +233,6 @@ export default function SideBar() {
         </div>    
       </div>
 
-      {/* Menu Section */}
       <div className="flex flex-col justify-start pl-7 w-full h-auto gap-4">
         <div 
           className={getMenuStyle('dashboard')}
@@ -331,15 +306,19 @@ export default function SideBar() {
         </div>
       </div>
 
-      {/* logout */}
       <div className="absolute bottom-0 w-[24rem] pl-7 pb-6">
-        <button
-          type="button"
-          onClick={() => {
-            profileAPI.clearSession();
-            router.push('/admin/signin');
-          }}
-          className="flex gap-2 w-[90%] sm:w-[9rem] md:w-[13rem] lg:w-[13rem] 3xl:w-[20rem] h-[2.5rem] rounded-md items-center pl-4 cursor-pointer transition-colors text-[#8E8E93] hover:bg-[#1E293B] hover:text-[#F7F7F7]"
+      <button
+        type="button"
+        onClick={() => {
+          // ลบ cookies ทั้งหมด
+          Object.keys(Cookies.get()).forEach(cookieName => {
+            Cookies.remove(cookieName, { path: '/' });
+          });
+          
+          // redirect ไปหน้า signin
+          router.replace('/admin/signin');  // ใช้ replace แทน push
+        }}
+        className="flex gap-2 w-[90%] sm:w-[9rem] md:w-[13rem] lg:w-[13rem] 3xl:w-[20rem] h-[2.5rem] rounded-md items-center pl-4 cursor-pointer transition-colors text-[#8E8E93] hover:bg-[#1E293B] hover:text-[#F7F7F7]"
         >
           <svg 
             width="24" 

@@ -1,46 +1,12 @@
 'use client'
+
 import Image from "next/image";
 import { useState } from "react";
 import { Mail, Lock, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { setAuthToken } from "../utils/auth";
-import { profileAPI } from "../MockAPI/MockProfile";
+import Cookies from 'js-cookie';
 
-// Mock API function
-const mockLogin = async (email: string, password: string): Promise<{ 
-  success: boolean; 
-  message: string; 
-  token?: string;
-  userData?: {
-    email: string;
-    name: string;
-  }
-}> => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // ตรวจสอบว่าเป็น email และ password ที่ถูกต้อง
-  if (email === 'loginkoakod@hotmail.com' && password === 'Bosshaha1122') {
-    return { 
-      success: true, 
-      message: 'Login successful',
-      token: 'mock_jwt_token',
-      userData: {
-        email: email,
-        name: 'Admin name'
-      }
-    };
-  }
-  
-  // กรณีที่ email หรือ password ไม่ถูกต้อง
-  return { 
-    success: false, 
-    message: 'Invalid email or password. This email is not registered in the system.' 
-  };
-};
-
-
-// Separate button component for reusability
 const SocialButton = ({ icon, text }: { icon: string, text: string }) => (
   <button className="flex items-center justify-center w-[26.5rem] h-[4rem] border-[1px] border-[#C6C6C980] rounded-2xl bg-transparent cursor-pointer hover:bg-gray-50 transition-colors">
     <Image 
@@ -54,7 +20,6 @@ const SocialButton = ({ icon, text }: { icon: string, text: string }) => (
   </button>
 );
 
-// Input field component for reusability
 const InputField = ({ 
   type, 
   placeholder, 
@@ -64,7 +29,7 @@ const InputField = ({
   showPassword, 
   togglePassword,
   disabled,
-  onKeyDown  // เพิ่ม prop นี้
+  onKeyDown
 }: { 
   type: string, 
   placeholder: string, 
@@ -74,7 +39,7 @@ const InputField = ({
   showPassword?: boolean,
   togglePassword?: () => void,
   disabled?: boolean,
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void  // เพิ่ม type นี้
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void 
 }) => (
   <div className="flex items-center w-[26.5rem] h-[4rem] border-2 border-[#F7F7F7] bg-[#F7F7F7] pl-[2rem] rounded-2xl focus-within:border-[#9B1C27] transition-colors">
     <Icon size={16} />
@@ -83,7 +48,7 @@ const InputField = ({
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      onKeyDown={onKeyDown}  // เพิ่ม event handler นี้
+      onKeyDown={onKeyDown}
       disabled={disabled}
       className="ml-2 flex-1 bg-transparent outline-none text-[1rem] disabled:cursor-not-allowed"
     />
@@ -119,25 +84,54 @@ export default function SignIn() {
     setIsLoading(true);
   
     try {
-      const response = await mockLogin(email, password);
+      console.log('Attempting login...'); // debug log
+      const response = await fetch('https://watt-photo-booth-api-production.up.railway.app/api/v1/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+      console.log('Login response:', data); // debug log
       
-      if (response.success && response.token && response.userData) {
-        // เก็บ token และ email ใน cookie และ localStorage
-        setAuthToken(response.token, response.userData.email);
+      if (response.ok && data.data?.access_token) {
+        // Save token
+        Cookies.set('auth_token', data.data.access_token, {
+          path: '/',
+          secure: true,
+          sameSite: 'lax',
+          expires: 7
+        });
         
-        // Initialize profile
-        profileAPI.initializeProfile(response.userData.email, response.token);
+        // Save user data
+        Cookies.set('user_data', JSON.stringify({
+          name: data.data.user?.name || 'Admin',
+          email: data.data.user?.email,
+          image: data.data.user?.image || '/default-profile.png'
+        }), {
+          path: '/',
+          secure: true,
+          sameSite: 'lax',
+          expires: 7
+        });
+
+        setMessage({ text: 'Login successful', type: 'success' });
         
-        setMessage({ text: response.message, type: 'success' });
-        
-        // redirect ไป dashboard
+        // Add delay and use replace instead of push
         setTimeout(() => {
-          router.push('/admin/dashboard');
+          router.replace('/admin/dashboard');
         }, 1000);
       } else {
-        setMessage({ text: response.message, type: 'error' });
+        console.log('Login failed:', data.message); // debug log
+        setMessage({ 
+          text: data.message || 'Invalid email or password', 
+          type: 'error' 
+        });
       }
     } catch (error) {
+      console.error('Login error:', error);
       setMessage({ 
         text: 'An error occurred. Please try again later.', 
         type: 'error' 
@@ -153,6 +147,7 @@ export default function SignIn() {
       handleSubmit(e as any);
     }
   };
+
   return (
     <div className="min-h-screen bg-white select-none">
       <div className="h-[8rem] flex items-center">

@@ -1,36 +1,37 @@
-import { Profile, ProfileAPI, TransactionAPI } from '@/types/types';
-import { eventAPI } from './mockEventAPI';
-import { departmentAPI } from './mockDepartmentAPI';
+// services/profile.ts
+import Cookies from 'js-cookie';
+import { Profile, ProfileAPI } from '@/types/types';
 
-const STORAGE_KEY = 'user_profile';
+const PROFILE_KEY = 'user_profile';
 const AUTH_TOKEN_KEY = 'auth_token';
 const SESSION_KEY = 'currentSession';
 
 const DEFAULT_PROFILE: Profile = {
   name: 'Admin name',
-  email: 'loginkoakod@hotmail.com',
-  image: '/default-profile.png'
+  email: '',  // จะถูกเติมจากข้อมูลที่ได้จาก API
+  image: ''
 };
 
-// Storage utilities
-const saveToStorage = (profile: Profile) => {
+const saveProfile = (profile: Profile) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    Cookies.set(PROFILE_KEY, JSON.stringify(profile), {
+      path: '/',
+      secure: true,
+      sameSite: 'lax'
+    });
   } catch (error) {
-    console.error('Error saving profile to storage:', error);
+    console.error('Error saving profile:', error);
   }
 };
 
-const loadFromStorage = (): Profile | null => {
+const loadProfile = (): Profile | null => {
   try {
-    const savedProfile = localStorage.getItem(STORAGE_KEY);
-    if (savedProfile) {
-      return JSON.parse(savedProfile);
-    }
+    const savedProfile = Cookies.get(PROFILE_KEY);
+    return savedProfile ? JSON.parse(savedProfile) : null;
   } catch (error) {
-    console.error('Error loading profile from storage:', error);
+    console.error('Error loading profile:', error);
+    return null;
   }
-  return null;
 };
 
 export const profileAPI: ProfileAPI = {
@@ -38,35 +39,30 @@ export const profileAPI: ProfileAPI = {
     if (!profileAPI.isAuthenticated()) {
       return null;
     }
-
-    const savedProfile = loadFromStorage();
-    if (savedProfile && savedProfile.email === 'loginkoakod@hotmail.com') {
-      return savedProfile;
-    }
-
-    return DEFAULT_PROFILE;
+    return loadProfile() || DEFAULT_PROFILE;
   },
 
   initializeProfile: (email: string, token: string): Profile => {
-    if (email !== 'loginkoakod@hotmail.com') {
-      throw new Error('Invalid email');
-    }
-
-    // Set authentication
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ email }));
-
     try {
-      // Load or create profile
-      const savedProfile = loadFromStorage();
-      const profile = savedProfile || DEFAULT_PROFILE;
+      // Set authentication
+      Cookies.set(AUTH_TOKEN_KEY, token, {
+        path: '/',
+        secure: true,
+        sameSite: 'lax'
+      });
+      
+      Cookies.set(SESSION_KEY, JSON.stringify({ email }), {
+        path: '/',
+        secure: true,
+        sameSite: 'lax'
+      });
 
-      // Save profile
-      saveToStorage(profile);
-
-      // Initialize transaction data
-      eventAPI.initialize();
-      departmentAPI.initialize();
+      // Create and save profile
+      const profile = {
+        ...DEFAULT_PROFILE,
+        email
+      };
+      saveProfile(profile);
 
       return profile;
     } catch (error) {
@@ -85,7 +81,7 @@ export const profileAPI: ProfileAPI = {
       if (!currentProfile) return null;
 
       const updatedProfile = { ...currentProfile, name };
-      saveToStorage(updatedProfile);
+      saveProfile(updatedProfile);
 
       return updatedProfile;
     } catch (error) {
@@ -104,7 +100,7 @@ export const profileAPI: ProfileAPI = {
       if (!currentProfile) return null;
 
       const updatedProfile = { ...currentProfile, image };
-      saveToStorage(updatedProfile);
+      saveProfile(updatedProfile);
 
       return updatedProfile;
     } catch (error) {
@@ -115,13 +111,13 @@ export const profileAPI: ProfileAPI = {
 
   isAuthenticated: (): boolean => {
     try {
-      const token = localStorage.getItem(AUTH_TOKEN_KEY);
-      const session = localStorage.getItem(SESSION_KEY);
+      const token = Cookies.get(AUTH_TOKEN_KEY);
+      const session = Cookies.get(SESSION_KEY);
 
       if (!token || !session) return false;
 
       const { email } = JSON.parse(session);
-      return email === 'loginkoakod@hotmail.com' && token === 'mock_jwt_token';
+      return !!email && !!token;
     } catch (error) {
       console.error('Error checking authentication:', error);
       return false;
@@ -130,16 +126,9 @@ export const profileAPI: ProfileAPI = {
 
   clearSession: () => {
     try {
-      // Clear authentication
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      localStorage.removeItem(SESSION_KEY);
-
-      // Clear transactions data
-      const profile = profileAPI.getProfile();
-      if (profile) {
-        eventAPI.clearStorage();
-        departmentAPI.clearStorage();
-      }
+      Cookies.remove(AUTH_TOKEN_KEY, { path: '/' });
+      Cookies.remove(SESSION_KEY, { path: '/' });
+      Cookies.remove(PROFILE_KEY, { path: '/' });
     } catch (error) {
       console.error('Error clearing session:', error);
     }
@@ -147,7 +136,9 @@ export const profileAPI: ProfileAPI = {
 
   resetAllData: () => {
     try {
-      localStorage.clear();
+      Object.keys(Cookies.get()).forEach(cookieName => {
+        Cookies.remove(cookieName, { path: '/' });
+      });
       window.location.reload();
     } catch (error) {
       console.error('Error resetting data:', error);
@@ -156,7 +147,7 @@ export const profileAPI: ProfileAPI = {
 
   hasProfile: (): boolean => {
     try {
-      return loadFromStorage() !== null;
+      return loadProfile() !== null;
     } catch (error) {
       console.error('Error checking profile existence:', error);
       return false;
@@ -165,7 +156,7 @@ export const profileAPI: ProfileAPI = {
 
   getCurrentEmail: (): string | null => {
     try {
-      const session = localStorage.getItem(SESSION_KEY);
+      const session = Cookies.get(SESSION_KEY);
       if (session) {
         const { email } = JSON.parse(session);
         return email;

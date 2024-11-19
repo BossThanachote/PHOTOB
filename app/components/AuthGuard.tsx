@@ -13,16 +13,20 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       const token = getAuthToken();
       if (!token) {
         router.push('/admin/signin');
-      } else {
-        setIsAuthenticated(true);
+        return;
       }
+      setIsAuthenticated(true);
     };
 
     checkAuth();
   }, [router]);
 
   if (!isAuthenticated) {
-    return null; // หรือจะแสดง loading component ก็ได้
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return <>{children}</>;
