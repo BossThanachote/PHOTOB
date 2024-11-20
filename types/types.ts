@@ -1,12 +1,60 @@
-// types/types.ts
+// Status type definition
+export type StatusType = 'Active' | 'Inactive' | 'Declined';
 
+// Base interfaces for Profile
 export interface Profile {
+  id?: string;
   name: string;
   email: string;
   image: string;
 }
 
+// API Response interfaces
+export interface APIResponse<T> {
+  status: string;
+  message: string;
+  data: T;
+}
+
+export interface PaginatedResponse<T> {
+  status: string;
+  message: string;
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// Sticker interfaces
+export interface APISticker {
+  id: string;
+  code: string;
+  name: string;
+  image_url: string;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Sticker {
+  id: string;
+  no: string;
+  stickerName: string;
+  sticker: string;
+  status: StatusType;
+  date: string;
+}
+
+export interface StickerResponse {
+  items: Sticker[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// Frame interfaces
 export interface Frame {
+  id: string;
   no: string;
   frameName: string;
   frame: string;
@@ -15,17 +63,77 @@ export interface Frame {
   date: string;
 }
 
-export interface Sticker {
-  no: string;
-  stickerName: string;
-  sticker: string;
-  status: StatusType;
-  date: string;
+export interface FrameResponse {
+  items: Frame[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
-export type StatusType = 'Active' | 'Inactive' | 'Declined';
+// Upload Data Interfaces
+export interface FrameUploadData {
+  frameName: string;
+  frame: File | Blob | string;
+  status: StatusType;
+  shot: number;
+}
 
-// Updated Transaction interface
+export interface StickerUploadData {
+  stickerName: string;
+  sticker: File | Blob | string;
+  status: StatusType;
+}
+
+// Update Data Interfaces
+export interface FrameUpdateData {
+  frameName?: string;
+  frame?: File | Blob | string;
+  status?: StatusType;
+  shot?: number;
+}
+
+export interface StickerUpdateData {
+  stickerName?: string;
+  sticker?: File | Blob | string;
+  status?: StatusType;
+}
+
+// Query Parameters
+export interface QueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: StatusType;
+  sort?: 'asc' | 'desc';
+  sortBy?: string;
+}
+
+// Service Response Types
+export interface ServiceResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  status?: number;
+}
+
+export interface TransactionService {
+  getTransactions: () => Promise<Transaction[]>;
+  getTransactionById: (id: string) => Promise<Transaction | null>;
+  updateTransactionStatus: (id: string, status: StatusType) => Promise<Transaction[]>;
+  updateTransaction: (id: string, data: Partial<Transaction>) => Promise<Transaction[]>;
+  addFramesToTransaction: (id: string, frameIds: string[]) => Promise<Transaction[]>;
+  removeFrameFromTransaction: (id: string, frameId: string) => Promise<Transaction[]>;
+  addStickersToTransaction: (id: string, stickerIds: string[]) => Promise<Transaction[]>;
+  removeStickerFromTransaction: (id: string, stickerId: string) => Promise<Transaction[]>;
+  searchTransactions: (searchTerm: string) => Promise<Transaction[]>;
+  deleteTransaction: (id: string) => Promise<Transaction[]>;
+  addTransaction: (data: TransactionUploadData) => Promise<Transaction[]>;
+  resetToDefault: () => Promise<Transaction[]>;
+  initialize: () => Promise<void>;
+  clearStorage: () => Promise<void>;
+}
+
+// Transaction interfaces
 export interface Transaction {
   id: string;
   name: string;
@@ -34,90 +142,83 @@ export interface Transaction {
   status: StatusType;
   totalSale: number;
   date: string;
-  frames: string[]; // Store frame IDs
-  stickers: string[]; // Store sticker IDs
+  frames: string[];    // Store frame IDs
+  stickers: string[];  // Store sticker IDs
 }
 
-// Interface for frame uploads
-export interface FrameUploadData {
-  frameName: string;
-  frame: string;
-  status: StatusType;
-  shot: number;
-}
-
-// Interface for sticker uploads
-export interface StickerUploadData {
-  stickerName: string;
-  sticker: string;
-  status: StatusType;
-}
-
-// Interface for event/machine uploads
-export interface EventUploadData {
+export interface TransactionUploadData {
   name: string;
   ipAddress: string;
   type: 'Event' | 'Department';
   status: StatusType;
+  totalSale: number;  
   frames: string[];
   stickers: string[];
 }
 
-// API Interfaces
-export interface TransactionAPI {
-  getTransactions: () => Transaction[];
-  updateTransactionStatus: (transactionId: string, newStatus: StatusType) => Transaction[];
-  searchTransactions: (searchTerm: string) => Transaction[];
-  deleteTransaction: (transactionId: string) => Transaction[];
-  resetToDefault: () => Transaction[];
-  addTransaction: (transaction: Omit<Transaction, 'id'>) => Transaction[];
-  initialize: () => void;
-  clearStorage: () => void;
-  // New methods for frame and sticker management
-  updateTransaction: (transactionId: string, data: Partial<Transaction>) => Transaction[];
-  addFramesToTransaction: (transactionId: string, frameIds: string[]) => Transaction[];
-  removeFrameFromTransaction: (transactionId: string, frameId: string) => Transaction[];
-  addStickersToTransaction: (transactionId: string, stickerIds: string[]) => Transaction[];
-  removeStickerFromTransaction: (transactionId: string, stickerId: string) => Transaction[];
-  getTransactionById: (transactionId: string) => Transaction | null;
+// Error Types
+export interface ApiError {
+  status: number;
+  message: string;
+  code?: string;
 }
 
-export interface ProfileAPI {
-  getProfile: () => Profile | null;
-  initializeProfile: (email: string, token: string) => Profile;
-  updateProfileName: (name: string) => Promise<Profile | null>;
-  updateProfileImage: (image: string) => Promise<Profile | null>;
-  isAuthenticated: () => boolean;
-  clearSession: () => void;
-  resetAllData: () => void;
-  hasProfile: () => boolean;
-  getCurrentEmail: () => string | null;
+// Service Interfaces
+export interface StickerService {
+  getStickers: (params?: QueryParams) => Promise<StickerResponse>;
+  getStickerById: (id: string) => Promise<Sticker>;
+  createSticker: (data: StickerUploadData) => Promise<Sticker>;
+  updateSticker: (id: string, data: StickerUpdateData) => Promise<Sticker>;
+  updateStickerStatus: (id: string, status: StatusType) => Promise<Sticker>;
+  updateStickerImage: (id: string, image: File | Blob | string) => Promise<Sticker>;
+  deleteSticker: (id: string) => Promise<void>;
 }
 
-export interface FrameAPI {
-  getFrames: () => Frame[];
-  addFrame: (frameData: FrameUploadData) => Frame;
-  updateFrame: (frameNo: string, updateData: Partial<Omit<Frame, 'no' | 'date'>>) => Frame | null;
-  updateFrameStatus: (frameNo: string, newStatus: StatusType) => Frame | null;
-  deleteFrame: (frameNo: string) => boolean;
-  getFrameById: (frameNo: string) => Frame | null;
-  clearFrames: () => void;
-  resetToDefault: () => void;
-  getFrameCount: () => number;
-  searchFrames: (searchTerm: string) => Frame[];
-  filterByStatus: (status: StatusType) => Frame[];
+export interface AuthService {
+  login: (email: string, password: string) => Promise<{ token: string; user: Profile }>;
+  logout: () => Promise<void>;
+  register: (email: string, password: string) => Promise<{ token: string; user: Profile }>;
+  refreshToken: () => Promise<string>;
+  getProfile: () => Promise<Profile>;
+  updateProfile: (data: Partial<Profile>) => Promise<Profile>;
 }
 
-export interface StickerAPI {
-  getStickers: () => Sticker[];
-  addSticker: (stickerData: StickerUploadData) => Sticker;
-  updateSticker: (stickerId: string, updateData: Partial<Omit<Sticker, 'no' | 'date'>>) => Sticker | null;
-  updateStickerStatus: (stickerId: string, newStatus: StatusType) => Sticker | null;
-  deleteSticker: (stickerId: string) => boolean;
-  getStickerById: (stickerId: string) => Sticker | null;
-  clearStickers: () => void;
-  resetToDefault: () => void;
-  getStickerCount: () => number;
-  searchStickers: (searchTerm: string) => Sticker[];
-  filterByStatus: (status: StatusType) => Sticker[];
+// Utility Types
+export type UUID = string;
+
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
+
+export interface QueryResult<T> {
+  data: T[];
+  pagination: Pagination;
+}
+
+export type SortDirection = 'asc' | 'desc';
+
+export interface SortOptions {
+  field: string;
+  direction: SortDirection;
+}
+
+export interface FilterOptions {
+  field: string;
+  value: string | number | boolean | null;
+  operator?: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'startsWith' | 'endsWith';
+}
+
+// Form Data Types
+export interface FormField<T = any> {
+  value: T;
+  error?: string;
+  touched: boolean;
+  required: boolean;
+}
+
+export type FormData<T> = {
+  [K in keyof T]: FormField<T[K]>;
+};

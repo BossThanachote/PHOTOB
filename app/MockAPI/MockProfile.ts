@@ -1,26 +1,42 @@
-// services/profile.ts
 import Cookies from 'js-cookie';
-import { Profile, ProfileAPI } from '@/types/types';
+import { 
+  Profile, 
+  AuthService,
+  ServiceResponse,
+  ApiError 
+} from '@/types/types';
 
+// Constants
 const PROFILE_KEY = 'user_profile';
 const AUTH_TOKEN_KEY = 'auth_token';
 const SESSION_KEY = 'currentSession';
+const TOKEN_EXPIRY_DAYS = 7;
+
+// Types
+interface SessionData {
+  email: string;
+  expiresAt: number;
+}
 
 const DEFAULT_PROFILE: Profile = {
+  id: '',
   name: 'Admin name',
-  email: '',  // จะถูกเติมจากข้อมูลที่ได้จาก API
+  email: '',
   image: ''
 };
 
-const saveProfile = (profile: Profile) => {
+// Helper Functions
+const saveProfile = (profile: Profile): void => {
   try {
     Cookies.set(PROFILE_KEY, JSON.stringify(profile), {
       path: '/',
       secure: true,
-      sameSite: 'lax'
+      sameSite: 'lax',
+      expires: TOKEN_EXPIRY_DAYS
     });
   } catch (error) {
     console.error('Error saving profile:', error);
+    throw new Error('Failed to save profile');
   }
 };
 
@@ -34,137 +50,198 @@ const loadProfile = (): Profile | null => {
   }
 };
 
-export const profileAPI: ProfileAPI = {
-  getProfile: (): Profile | null => {
-    if (!profileAPI.isAuthenticated()) {
-      return null;
-    }
-    return loadProfile() || DEFAULT_PROFILE;
-  },
+const setAuthToken = (token: string): void => {
+  try {
+    Cookies.set(AUTH_TOKEN_KEY, token, {
+      path: '/',
+      secure: true,
+      sameSite: 'lax',
+      expires: TOKEN_EXPIRY_DAYS
+    });
+  } catch (error) {
+    console.error('Error setting auth token:', error);
+    throw new Error('Failed to set authentication token');
+  }
+};
 
-  initializeProfile: (email: string, token: string): Profile => {
+const setSession = (email: string): void => {
+  try {
+    const sessionData: SessionData = {
+      email,
+      expiresAt: Date.now() + (TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000)
+    };
+    
+    Cookies.set(SESSION_KEY, JSON.stringify(sessionData), {
+      path: '/',
+      secure: true,
+      sameSite: 'lax',
+      expires: TOKEN_EXPIRY_DAYS
+    });
+  } catch (error) {
+    console.error('Error setting session:', error);
+    throw new Error('Failed to set session');
+  }
+};
+
+const checkSession = (): boolean => {
+  try {
+    const session = Cookies.get(SESSION_KEY);
+    if (!session) return false;
+
+    const sessionData: SessionData = JSON.parse(session);
+    return sessionData.expiresAt > Date.now();
+  } catch {
+    return false;
+  }
+};
+
+export const profileService: AuthService = {
+  // Login
+  login: async (email: string, password: string): Promise<{ token: string; user: Profile }> => {
     try {
-      // Set authentication
-      Cookies.set(AUTH_TOKEN_KEY, token, {
-        path: '/',
-        secure: true,
-        sameSite: 'lax'
-      });
+      // Here you would normally make an API call
+      // Mock successful login
+      const token = 'mock_token_' + Date.now();
       
-      Cookies.set(SESSION_KEY, JSON.stringify({ email }), {
-        path: '/',
-        secure: true,
-        sameSite: 'lax'
-      });
-
-      // Create and save profile
+      setAuthToken(token);
+      setSession(email);
+      
       const profile = {
         ...DEFAULT_PROFILE,
+        id: 'mock_id_' + Date.now(),
         email
       };
+      
       saveProfile(profile);
 
-      return profile;
+      return { token, user: profile };
     } catch (error) {
-      console.error('Error initializing profile:', error);
-      throw new Error('Failed to initialize profile');
+      console.error('Login error:', error);
+      throw new Error('Login failed');
     }
   },
 
-  updateProfileName: async (name: string): Promise<Profile | null> => {
-    if (!profileAPI.isAuthenticated()) {
-      return null;
-    }
-
-    try {
-      const currentProfile = profileAPI.getProfile();
-      if (!currentProfile) return null;
-
-      const updatedProfile = { ...currentProfile, name };
-      saveProfile(updatedProfile);
-
-      return updatedProfile;
-    } catch (error) {
-      console.error('Error updating profile name:', error);
-      return null;
-    }
-  },
-
-  updateProfileImage: async (image: string): Promise<Profile | null> => {
-    if (!profileAPI.isAuthenticated()) {
-      return null;
-    }
-
-    try {
-      const currentProfile = profileAPI.getProfile();
-      if (!currentProfile) return null;
-
-      const updatedProfile = { ...currentProfile, image };
-      saveProfile(updatedProfile);
-
-      return updatedProfile;
-    } catch (error) {
-      console.error('Error updating profile image:', error);
-      return null;
-    }
-  },
-
-  isAuthenticated: (): boolean => {
-    try {
-      const token = Cookies.get(AUTH_TOKEN_KEY);
-      const session = Cookies.get(SESSION_KEY);
-
-      if (!token || !session) return false;
-
-      const { email } = JSON.parse(session);
-      return !!email && !!token;
-    } catch (error) {
-      console.error('Error checking authentication:', error);
-      return false;
-    }
-  },
-
-  clearSession: () => {
+  // Logout
+  logout: async (): Promise<void> => {
     try {
       Cookies.remove(AUTH_TOKEN_KEY, { path: '/' });
       Cookies.remove(SESSION_KEY, { path: '/' });
       Cookies.remove(PROFILE_KEY, { path: '/' });
     } catch (error) {
-      console.error('Error clearing session:', error);
+      console.error('Logout error:', error);
+      throw new Error('Logout failed');
     }
   },
 
-  resetAllData: () => {
+  // Register
+  register: async (email: string, password: string): Promise<{ token: string; user: Profile }> => {
     try {
-      Object.keys(Cookies.get()).forEach(cookieName => {
-        Cookies.remove(cookieName, { path: '/' });
-      });
-      window.location.reload();
+      // Mock registration
+      const token = 'mock_token_' + Date.now();
+      
+      setAuthToken(token);
+      setSession(email);
+      
+      const profile = {
+        ...DEFAULT_PROFILE,
+        id: 'mock_id_' + Date.now(),
+        email
+      };
+      
+      saveProfile(profile);
+
+      return { token, user: profile };
     } catch (error) {
-      console.error('Error resetting data:', error);
+      console.error('Registration error:', error);
+      throw new Error('Registration failed');
     }
   },
 
-  hasProfile: (): boolean => {
+  // Refresh Token
+  refreshToken: async (): Promise<string> => {
     try {
-      return loadProfile() !== null;
-    } catch (error) {
-      console.error('Error checking profile existence:', error);
-      return false;
-    }
-  },
-
-  getCurrentEmail: (): string | null => {
-    try {
-      const session = Cookies.get(SESSION_KEY);
-      if (session) {
-        const { email } = JSON.parse(session);
-        return email;
+      if (!checkSession()) {
+        throw new Error('Session expired');
       }
-      return null;
+
+      const newToken = 'mock_refresh_token_' + Date.now();
+      setAuthToken(newToken);
+      return newToken;
     } catch (error) {
-      console.error('Error getting current email:', error);
-      return null;
+      console.error('Token refresh error:', error);
+      throw new Error('Token refresh failed');
     }
+  },
+
+  // Get Profile
+  getProfile: async (): Promise<Profile> => {
+    try {
+      if (!checkSession()) {
+        throw new Error('Not authenticated');
+      }
+
+      const profile = loadProfile();
+      if (!profile) {
+        throw new Error('Profile not found');
+      }
+
+      return profile;
+    } catch (error) {
+      console.error('Get profile error:', error);
+      throw new Error('Failed to get profile');
+    }
+  },
+
+  // Update Profile
+  updateProfile: async (data: Partial<Profile>): Promise<Profile> => {
+    try {
+      if (!checkSession()) {
+        throw new Error('Not authenticated');
+      }
+
+      const currentProfile = await profileService.getProfile();
+      const updatedProfile = {
+        ...currentProfile,
+        ...data
+      };
+
+      saveProfile(updatedProfile);
+      return updatedProfile;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      throw new Error('Failed to update profile');
+    }
+  },
+};
+
+// Utility Functions
+export const isAuthenticated = (): boolean => {
+  try {
+    return checkSession() && !!Cookies.get(AUTH_TOKEN_KEY);
+  } catch {
+    return false;
   }
 };
+
+export const getAuthToken = (): string | null => {
+  try {
+    return Cookies.get(AUTH_TOKEN_KEY) || null;
+  } catch {
+    return null;
+  }
+};
+
+export const getCurrentEmail = (): string | null => {
+  try {
+    const session = Cookies.get(SESSION_KEY);
+    if (session) {
+      const { email } = JSON.parse(session);
+      return email;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+export default profileService;

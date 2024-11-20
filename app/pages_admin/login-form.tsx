@@ -1,14 +1,50 @@
 'use client'
 
-import Image from "next/image";
-import { useState } from "react";
-import { Mail, Lock, ChevronLeft, Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import Cookies from 'js-cookie';
+import Image from "next/image"
+import { useState } from "react"
+import { Mail, Lock, ChevronLeft, Eye, EyeOff } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { setAuthToken, setUserData, UserData } from '../utils/auth'
 
-const SocialButton = ({ icon, text }: { icon: string, text: string }) => (
-  <button className="flex items-center justify-center w-[26.5rem] h-[4rem] border-[1px] border-[#C6C6C980] rounded-2xl bg-transparent cursor-pointer hover:bg-gray-50 transition-colors">
+// Types
+interface SocialButtonProps {
+  icon: string
+  text: string
+}
+
+interface InputFieldProps {
+  type: string
+  placeholder: string
+  icon: any
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  showPassword?: boolean
+  togglePassword?: () => void
+  disabled?: boolean
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
+}
+
+interface LoginResponse {
+  data?: {
+    access_token: string
+    user?: {
+      id: string
+      name: string
+      email: string
+      image?: string
+      role: 'admin' | 'user'
+    }
+  }
+  message?: string
+}
+
+// Component for social login buttons
+const SocialButton = ({ icon, text }: SocialButtonProps) => (
+  <button 
+    type="button"
+    className="flex items-center justify-center w-[26.5rem] h-[4rem] border-[1px] border-[#C6C6C980] rounded-2xl bg-transparent cursor-pointer hover:bg-gray-50 transition-colors"
+  >
     <Image 
       src={`/${icon}`} 
       alt="" 
@@ -18,8 +54,9 @@ const SocialButton = ({ icon, text }: { icon: string, text: string }) => (
     />
     <span className="text-[#8E8E93] font-ibm-thai-400 text-[1rem]">{text}</span>
   </button>
-);
+)
 
+// Component for input fields
 const InputField = ({ 
   type, 
   placeholder, 
@@ -30,17 +67,7 @@ const InputField = ({
   togglePassword,
   disabled,
   onKeyDown
-}: { 
-  type: string, 
-  placeholder: string, 
-  icon: any,
-  value: string,
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
-  showPassword?: boolean,
-  togglePassword?: () => void,
-  disabled?: boolean,
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void 
-}) => (
+}: InputFieldProps) => (
   <div className="flex items-center w-[26.5rem] h-[4rem] border-2 border-[#F7F7F7] bg-[#F7F7F7] pl-[2rem] rounded-2xl focus-within:border-[#9B1C27] transition-colors">
     <Icon size={16} />
     <input
@@ -62,91 +89,81 @@ const InputField = ({
       </button>
     )}
   </div>
-);
+)
 
 export default function SignIn() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const router = useRouter()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage(null);
+    e.preventDefault()
+    setMessage(null)
   
     if (!email || !password) {
-      setMessage({ text: 'Please fill in all fields', type: 'error' });
-      return;
+      setMessage({ text: 'Please fill in all fields', type: 'error' })
+      return
     }
   
-    setIsLoading(true);
+    setIsLoading(true)
   
     try {
-      console.log('Attempting login...'); // debug log
       const response = await fetch('https://watt-photo-booth-api-production.up.railway.app/api/v1/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password })
-      });
+      })
 
-      const data = await response.json();
-      console.log('Login response:', data); // debug log
+      const data: LoginResponse = await response.json()
       
       if (response.ok && data.data?.access_token) {
         // Save token
-        Cookies.set('auth_token', data.data.access_token, {
-          path: '/',
-          secure: true,
-          sameSite: 'lax',
-          expires: 7
-        });
+        setAuthToken(data.data.access_token)
         
-        // Save user data
-        Cookies.set('user_data', JSON.stringify({
+        // Save user data with proper type checking
+        const userData: UserData = {
+          id: data.data.user?.id || '',
           name: data.data.user?.name || 'Admin',
-          email: data.data.user?.email,
-          image: data.data.user?.image || '/default-profile.png'
-        }), {
-          path: '/',
-          secure: true,
-          sameSite: 'lax',
-          expires: 7
-        });
+          email: data.data.user?.email || '',
+          image: data.data.user?.image || '/default-profile.png',
+          role: data.data.user?.role || 'user'
+        }
+        setUserData(userData)
 
-        setMessage({ text: 'Login successful', type: 'success' });
+        setMessage({ text: 'Login successful', type: 'success' })
         
-        // Add delay and use replace instead of push
+        // Redirect after short delay
         setTimeout(() => {
-          router.replace('/admin/dashboard');
-        }, 1000);
+          router.replace('/admin/dashboard')
+        }, 1000)
       } else {
-        console.log('Login failed:', data.message); // debug log
         setMessage({ 
           text: data.message || 'Invalid email or password', 
           type: 'error' 
-        });
+        })
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error:', error)
       setMessage({ 
         text: 'An error occurred. Please try again later.', 
         type: 'error' 
-      });
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSubmit(e as any);
+      e.preventDefault()
+      handleSubmit(e as any)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-white select-none">
@@ -155,7 +172,8 @@ export default function SignIn() {
           type="button"
           className="w-10 h-10 bg-[#F7F7F7] ml-10 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
           onClick={() => router.back()}
-          aria-label="Go back">
+          aria-label="Go back"
+        >
           <ChevronLeft size={20} />
         </button>
       </div>
@@ -189,7 +207,7 @@ export default function SignIn() {
             
             <div className="flex justify-end w-full">
               <Link href="/admin/forgot-password">
-                <button className="text-[#981C27] font-ibm-thai-500 hover:underline">
+                <button type="button" className="text-[#981C27] font-ibm-thai-500 hover:underline">
                   Forgot password?
                 </button>
               </Link>
@@ -225,7 +243,7 @@ export default function SignIn() {
             <p className="mt-8 text-[1rem] text-[#8E8E93] font-ibm-thai-500">
               Don't have any account?{' '}
               <Link href="/admin/signup">
-                <button className="font-ibm-thai-500 text-[#F69052] hover:underline">
+                <button type="button" className="font-ibm-thai-500 text-[#F69052] hover:underline">
                   Sign Up
                 </button>
               </Link>
@@ -234,5 +252,5 @@ export default function SignIn() {
         </div>
       </form>
     </div>
-  );
+  )
 }

@@ -1,5 +1,13 @@
-import { Transaction, StatusType, TransactionAPI } from '@/types/types';
+import { 
+  Transaction, 
+  StatusType, 
+  TransactionService,
+  ServiceResponse,
+  TransactionUploadData
+} from '@/types/types';
+import { getProfile } from '../utils/auth';
 
+// Constants
 const DEPARTMENT_STORAGE_KEY = 'department_transactions';
 
 // Default department data
@@ -11,7 +19,7 @@ const DEFAULT_DEPARTMENT_DATA: Transaction[] = [
     type: 'Department',
     status: 'Active',
     totalSale: 1003500,
-    date: '2023-04-05, 00:05PM',
+    date: new Date().toISOString(),
     frames: [], 
     stickers: []
   },
@@ -22,16 +30,41 @@ const DEFAULT_DEPARTMENT_DATA: Transaction[] = [
     type: 'Department',
     status: 'Active',
     totalSale: 1002500,
-    date: '2023-04-05, 00:05PM',
+    date: new Date().toISOString(),
     frames: [],
     stickers: []
   }
 ];
 
-// Helper function to get storage key with email prefix
-const getStorageKey = (email: string) => `${email}_${DEPARTMENT_STORAGE_KEY}`;
+// Helper Types
+interface StorageData {
+  transactions: Transaction[];
+  lastUpdated: string;
+}
 
-// Helper function to reorder IDs
+// Helper Functions
+const getStorageKey = (email: string): string => {
+  if (!email) throw new Error('Email is required for storage key');
+  return `${email}_${DEPARTMENT_STORAGE_KEY}`;
+};
+
+const getCurrentEmail = async (): Promise<string> => {
+  const profile = await getProfile();
+  if (!profile?.email) throw new Error('No active profile found');
+  return profile.email;
+};
+
+const formatDate = (): string => {
+  return new Date().toLocaleString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
 const reorderIds = (transactions: Transaction[]): Transaction[] => {
   return transactions.map((transaction, index) => ({
     ...transaction,
@@ -40,266 +73,195 @@ const reorderIds = (transactions: Transaction[]): Transaction[] => {
   }));
 };
 
-// Helper function to save to localStorage
-const saveToStorage = (transactions: Transaction[]) => {
+const saveToStorage = async (transactions: Transaction[]): Promise<void> => {
   try {
-    const currentProfile = localStorage.getItem('adminProfile');
-    if (currentProfile) {
-      const { email } = JSON.parse(currentProfile);
-      localStorage.setItem(getStorageKey(email), JSON.stringify(transactions));
-    }
+    const email = await getCurrentEmail();
+    const storageData: StorageData = {
+      transactions,
+      lastUpdated: new Date().toISOString()
+    };
+    localStorage.setItem(getStorageKey(email), JSON.stringify(storageData));
   } catch (error) {
     console.error('Error saving transactions:', error);
+    throw error;
   }
 };
 
-// Helper function to load from localStorage
-const loadFromStorage = (): Transaction[] => {
+const loadFromStorage = async (): Promise<Transaction[]> => {
   try {
-    const currentProfile = localStorage.getItem('adminProfile');
-    if (currentProfile) {
-      const { email } = JSON.parse(currentProfile);
-      const savedTransactions = localStorage.getItem(getStorageKey(email));
-      if (savedTransactions) {
-        return JSON.parse(savedTransactions);
-      }
-    }
-    return DEFAULT_DEPARTMENT_DATA;
+    const email = await getCurrentEmail();
+    const savedData = localStorage.getItem(getStorageKey(email));
+    if (!savedData) return DEFAULT_DEPARTMENT_DATA;
+
+    const { transactions } = JSON.parse(savedData) as StorageData;
+    return transactions;
   } catch (error) {
     console.error('Error loading transactions:', error);
     return DEFAULT_DEPARTMENT_DATA;
   }
 };
 
-// Department API implementation
-export const departmentAPI: TransactionAPI = {
-  getTransactions: (): Transaction[] => {
-    return loadFromStorage();
+// Service Implementation
+export const departmentService: TransactionService = {
+  getTransactions: async () => {
+    return await loadFromStorage();
   },
 
-  getTransactionById: (transactionId: string): Transaction | null => {
-    const transactions = loadFromStorage();
-    return transactions.find(transaction => transaction.id === transactionId) || null;
+  getTransactionById: async (id: string) => {
+    const transactions = await loadFromStorage();
+    return transactions.find(transaction => transaction.id === id) || null;
   },
 
-  updateTransactionStatus: (transactionId: string, newStatus: StatusType): Transaction[] => {
-    const transactions = loadFromStorage();
+  updateTransactionStatus: async (id: string, status: StatusType) => {
+    const transactions = await loadFromStorage();
     const updatedTransactions = transactions.map(transaction => 
-      transaction.id === transactionId 
-        ? { ...transaction, status: newStatus }
-        : transaction
+      transaction.id === id ? { ...transaction, status } : transaction
     );
-    saveToStorage(updatedTransactions);
+    await saveToStorage(updatedTransactions);
     return updatedTransactions;
   },
 
-  updateTransaction: (transactionId: string, data: Partial<Transaction>): Transaction[] => {
-    try {
-      const currentProfile = localStorage.getItem('adminProfile');
-      if (!currentProfile) return [];
+  updateTransaction: async (id: string, data: Partial<Transaction>) => {
+    const transactions = await loadFromStorage();
+    const currentTransaction = transactions.find(transaction => transaction.id === id);
 
-      const { email } = JSON.parse(currentProfile);
-      const transactions = loadFromStorage();
-      const currentTransaction = transactions.find(transaction => transaction.id === transactionId);
-
-      // ถ้ามีการเปลี่ยน Type จาก Department เป็น Event
-      if (data.type && data.type === 'Event' && currentTransaction?.type === 'Department') {
-        // 1. ลบข้อมูลออกจาก Department
-        const remainingTransactions = transactions.filter(transaction => transaction.id !== transactionId);
-        const reorderedTransactions = reorderIds(remainingTransactions);
-        saveToStorage(reorderedTransactions);
-
-        // 2. เพิ่มข้อมูลไปยัง Event
-        const eventAPI = require('./mockEventAPI').eventAPI;
-        const eventTransactions = eventAPI.getTransactions();
-        const newEventId = String(eventTransactions.length + 1).padStart(3, '0');
-
-        const movedTransaction: Transaction = {
-          ...currentTransaction,
-          ...data,
-          id: newEventId,
-          name: `Event ${newEventId}`,
-          type: 'Event',
-          date: new Date().toLocaleString('en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-          })
-        };
-
-        eventTransactions.push(movedTransaction);
-        localStorage.setItem(
-          `${email}_event_data`,
-          JSON.stringify(eventTransactions)
-        );
-
-        return reorderedTransactions;
-      }
-
-      // ถ้าไม่มีการเปลี่ยน Type ให้ทำงานปกติ
-      const updatedTransactions = transactions.map(transaction =>
-        transaction.id === transactionId
-          ? {
-              ...transaction,
-              ...data,
-              date: new Date().toLocaleString('en-US', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              })
-            }
-          : transaction
-      );
-      
-      saveToStorage(updatedTransactions);
-      return updatedTransactions;
-    } catch (error) {
-      console.error('Error updating transaction:', error);
-      return [];
+    if (!currentTransaction) {
+      throw new Error('Transaction not found');
     }
-  },
 
-  addFramesToTransaction: (transactionId: string, frameIds: string[]): Transaction[] => {
-    const transactions = loadFromStorage();
+    // Handle type change (Department -> Event)
+    if (data.type === 'Event' && currentTransaction.type === 'Department') {
+      throw new Error('Type change operation should be handled by the event service');
+    }
+
     const updatedTransactions = transactions.map(transaction =>
-      transaction.id === transactionId
+      transaction.id === id
         ? {
             ...transaction,
-            frames: [...new Set([...(transaction.frames || []), ...frameIds])]
+            ...data,
+            date: formatDate()
           }
         : transaction
     );
-    saveToStorage(updatedTransactions);
+
+    await saveToStorage(updatedTransactions);
     return updatedTransactions;
   },
 
-  removeFrameFromTransaction: (transactionId: string, frameId: string): Transaction[] => {
-    const transactions = loadFromStorage();
+  addFramesToTransaction: async (id: string, frameIds: string[]) => {
+    const transactions = await loadFromStorage();
     const updatedTransactions = transactions.map(transaction =>
-      transaction.id === transactionId
+      transaction.id === id
         ? {
             ...transaction,
-            frames: (transaction.frames || []).filter(id => id !== frameId)
+            frames: [...new Set([...transaction.frames, ...frameIds])]
           }
         : transaction
     );
-    saveToStorage(updatedTransactions);
+    await saveToStorage(updatedTransactions);
     return updatedTransactions;
   },
 
-  addStickersToTransaction: (transactionId: string, stickerIds: string[]): Transaction[] => {
-    const transactions = loadFromStorage();
+  removeFrameFromTransaction: async (id: string, frameId: string) => {
+    const transactions = await loadFromStorage();
     const updatedTransactions = transactions.map(transaction =>
-      transaction.id === transactionId
+      transaction.id === id
         ? {
             ...transaction,
-            stickers: [...new Set([...(transaction.stickers || []), ...stickerIds])]
+            frames: transaction.frames.filter(fId => fId !== frameId)
           }
         : transaction
     );
-    saveToStorage(updatedTransactions);
+    await saveToStorage(updatedTransactions);
     return updatedTransactions;
   },
 
-  removeStickerFromTransaction: (transactionId: string, stickerId: string): Transaction[] => {
-    const transactions = loadFromStorage();
+  addStickersToTransaction: async (id: string, stickerIds: string[]) => {
+    const transactions = await loadFromStorage();
     const updatedTransactions = transactions.map(transaction =>
-      transaction.id === transactionId
+      transaction.id === id
         ? {
             ...transaction,
-            stickers: (transaction.stickers || []).filter(id => id !== stickerId)
+            stickers: [...new Set([...transaction.stickers, ...stickerIds])]
           }
         : transaction
     );
-    saveToStorage(updatedTransactions);
+    await saveToStorage(updatedTransactions);
     return updatedTransactions;
   },
 
-  searchTransactions: (searchTerm: string): Transaction[] => {
-    const transactions = loadFromStorage();
+  removeStickerFromTransaction: async (id: string, stickerId: string) => {
+    const transactions = await loadFromStorage();
+    const updatedTransactions = transactions.map(transaction =>
+      transaction.id === id
+        ? {
+            ...transaction,
+            stickers: transaction.stickers.filter(sId => sId !== stickerId)
+          }
+        : transaction
+    );
+    await saveToStorage(updatedTransactions);
+    return updatedTransactions;
+  },
+
+  searchTransactions: async (searchTerm: string) => {
+    const transactions = await loadFromStorage();
     if (!searchTerm) return transactions;
 
-    const lowercaseSearch = searchTerm.toLowerCase();
+    const term = searchTerm.toLowerCase();
     return transactions.filter(transaction => 
-      transaction.id.toLowerCase().includes(lowercaseSearch) ||
-      (transaction.name || '').toLowerCase().includes(lowercaseSearch) ||
-      (transaction.ipAddress || '').toLowerCase().includes(lowercaseSearch) ||
-      transaction.type.toLowerCase().includes(lowercaseSearch) ||
-      transaction.status.toLowerCase().includes(lowercaseSearch) ||
-      transaction.date.toLowerCase().includes(lowercaseSearch) ||
-      transaction.totalSale.toString().includes(searchTerm)
+      transaction.id.toLowerCase().includes(term) ||
+      transaction.name.toLowerCase().includes(term) ||
+      transaction.ipAddress.toLowerCase().includes(term) ||
+      transaction.type.toLowerCase().includes(term) ||
+      transaction.status.toLowerCase().includes(term) ||
+      transaction.date.toLowerCase().includes(term) ||
+      transaction.totalSale.toString().includes(term)
     );
   },
 
-  deleteTransaction: (transactionId: string): Transaction[] => {
-    const transactions = loadFromStorage();
-    const updatedTransactions = transactions.filter(transaction => transaction.id !== transactionId);
-    const reorderedTransactions = reorderIds(updatedTransactions);
-    saveToStorage(reorderedTransactions);
+  deleteTransaction: async (id: string) => {
+    const transactions = await loadFromStorage();
+    const filteredTransactions = transactions.filter(transaction => transaction.id !== id);
+    const reorderedTransactions = reorderIds(filteredTransactions);
+    await saveToStorage(reorderedTransactions);
     return reorderedTransactions;
   },
 
-  addTransaction: (transaction: Omit<Transaction, 'id'>): Transaction[] => {
-    const transactions = loadFromStorage();
+  addTransaction: async (data: TransactionUploadData) => {
+    const transactions = await loadFromStorage();
     const newId = String(transactions.length + 1).padStart(3, '0');
     const newTransaction: Transaction = {
-      ...transaction,
+      ...data,
       id: newId,
       name: `Department ${newId}`,
       type: 'Department',
-      frames: transaction.frames || [],
-      stickers: transaction.stickers || [],
-      date: new Date().toLocaleString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      })
+      frames: data.frames || [],
+      stickers: data.stickers || [],
+      date: formatDate(),
+      totalSale: data.totalSale || 0
     };
     const updatedTransactions = [...transactions, newTransaction];
-    saveToStorage(updatedTransactions);
+    await saveToStorage(updatedTransactions);
     return updatedTransactions;
   },
 
-  resetToDefault: (): Transaction[] => {
-    saveToStorage(DEFAULT_DEPARTMENT_DATA);
+  resetToDefault: async () => {
+    await saveToStorage(DEFAULT_DEPARTMENT_DATA);
     return DEFAULT_DEPARTMENT_DATA;
   },
 
-  initialize: (): void => {
-    try {
-      const currentProfile = localStorage.getItem('adminProfile');
-      if (currentProfile) {
-        const { email } = JSON.parse(currentProfile);
-        const existingData = localStorage.getItem(getStorageKey(email));
-        if (!existingData) {
-          saveToStorage(DEFAULT_DEPARTMENT_DATA);
-        }
-      }
-    } catch (error) {
-      console.error('Error initializing department data:', error);
+  initialize: async () => {
+    const transactions = await loadFromStorage();
+    if (!transactions.length) {
+      await saveToStorage(DEFAULT_DEPARTMENT_DATA);
     }
   },
 
-  clearStorage: (): void => {
-    try {
-      const currentProfile = localStorage.getItem('adminProfile');
-      if (currentProfile) {
-        const { email } = JSON.parse(currentProfile);
-        localStorage.removeItem(getStorageKey(email));
-      }
-    } catch (error) {
-      console.error('Error clearing department storage:', error);
-    }
+  clearStorage: async () => {
+    const email = await getCurrentEmail();
+    localStorage.removeItem(getStorageKey(email));
   }
 };
 
-export default departmentAPI;
+export default departmentService;

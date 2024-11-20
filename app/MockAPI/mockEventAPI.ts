@@ -1,6 +1,15 @@
-import { Transaction, StatusType, TransactionAPI } from '@/types/types';
+import { 
+  Transaction, 
+  StatusType, 
+  TransactionService,
+  ServiceResponse,
+  TransactionUploadData
+} from '@/types/types';
+import { getProfile } from '../utils/auth';
 
+// Constants
 const EVENT_STORAGE_KEY = 'event_data';
+const DEPARTMENT_STORAGE_KEY = 'department_data';
 
 // Default event data
 const DEFAULT_EVENTS: Transaction[] = [
@@ -11,7 +20,7 @@ const DEFAULT_EVENTS: Transaction[] = [
     type: 'Event',
     status: 'Active',
     totalSale: 50000,
-    date: '2023-04-05, 00:05PM',
+    date: new Date().toISOString(),
     frames: [],
     stickers: []
   },
@@ -22,16 +31,36 @@ const DEFAULT_EVENTS: Transaction[] = [
     type: 'Event',
     status: 'Active',
     totalSale: 75000,
-    date: '2023-04-05, 00:05PM',
+    date: new Date().toISOString(),
     frames: [],
     stickers: []
   }
 ];
 
-// Helper function to get storage key with email prefix
-const getStorageKey = (email: string) => `${email}_${EVENT_STORAGE_KEY}`;
+// Helper Types
+interface StorageData {
+  events: Transaction[];
+  lastUpdated: string;
+}
 
-// Helper function to reorder IDs
+// Helper Functions
+const getStorageKey = (type: 'Event' | 'Department'): string => {
+  const profile = getProfile();
+  if (!profile) throw new Error('No active profile found');
+  return `${profile.email}_${type === 'Event' ? EVENT_STORAGE_KEY : DEPARTMENT_STORAGE_KEY}`;
+};
+
+const formatDate = (date: Date = new Date()): string => {
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
 const reorderIds = (transactions: Transaction[]): Transaction[] => {
   return transactions.map((transaction, index) => ({
     ...transaction,
@@ -40,262 +69,280 @@ const reorderIds = (transactions: Transaction[]): Transaction[] => {
   }));
 };
 
-// Helper function to save to localStorage
-const saveToStorage = (events: Transaction[]) => {
+const saveToStorage = async (transactions: Transaction[], type: 'Event' | 'Department'): Promise<void> => {
   try {
-    const currentProfile = localStorage.getItem('adminProfile');
-    if (currentProfile) {
-      const { email } = JSON.parse(currentProfile);
-      localStorage.setItem(getStorageKey(email), JSON.stringify(events));
-    }
+    const storageData: StorageData = {
+      events: transactions,
+      lastUpdated: new Date().toISOString()
+    };
+    localStorage.setItem(getStorageKey(type), JSON.stringify(storageData));
   } catch (error) {
-    console.error('Error saving events:', error);
+    console.error(`Error saving ${type.toLowerCase()}s:`, error);
+    throw error;
   }
 };
 
-// Helper function to load from localStorage
-const loadFromStorage = (): Transaction[] => {
+const loadFromStorage = async (type: 'Event' | 'Department'): Promise<Transaction[]> => {
   try {
-    const currentProfile = localStorage.getItem('adminProfile');
-    if (currentProfile) {
-      const { email } = JSON.parse(currentProfile);
-      const savedEvents = localStorage.getItem(getStorageKey(email));
-      if (savedEvents) {
-        return JSON.parse(savedEvents);
-      }
-    }
+    const storedData = localStorage.getItem(getStorageKey(type));
+    if (!storedData) return type === 'Event' ? DEFAULT_EVENTS : [];
+
+    const { events } = JSON.parse(storedData) as StorageData;
+    return events;
   } catch (error) {
-    console.error('Error loading events:', error);
+    console.error(`Error loading ${type.toLowerCase()}s:`, error);
+    return type === 'Event' ? DEFAULT_EVENTS : [];
   }
-  return DEFAULT_EVENTS;
 };
 
-// Event API implementation
-export const eventAPI: TransactionAPI = {
-  getTransactions: (): Transaction[] => {
-    return loadFromStorage();
-  },
-
-  getTransactionById: (transactionId: string): Transaction | null => {
-    const events = loadFromStorage();
-    return events.find(event => event.id === transactionId) || null;
-  },
-
-  updateTransactionStatus: (transactionId: string, newStatus: StatusType): Transaction[] => {
-    const events = loadFromStorage();
-    const updatedEvents = events.map(event => 
-      event.id === transactionId
-        ? { ...event, status: newStatus }
-        : event
-    );
-    saveToStorage(updatedEvents);
-    return updatedEvents;
-  },
-
-  updateTransaction: (transactionId: string, data: Partial<Transaction>): Transaction[] => {
+// Service Implementation
+export const transactionService: TransactionService = {
+  getTransactions: async () => {
     try {
-      const currentProfile = localStorage.getItem('adminProfile');
-      if (!currentProfile) return [];
+      return await loadFromStorage('Event');
+    } catch (error) {
+      console.error('Error getting transactions:', error);
+      throw error;
+    }
+  },
 
-      const { email } = JSON.parse(currentProfile);
-      const events = loadFromStorage();
-      const currentTransaction = events.find(event => event.id === transactionId);
+  getTransactionById: async (id: string) => {
+    try {
+      const events = await loadFromStorage('Event');
+      return events.find(event => event.id === id) || null;
+    } catch (error) {
+      console.error('Error getting transaction by ID:', error);
+      throw error;
+    }
+  },
 
-      // ถ้ามีการเปลี่ยน Type จาก Event เป็น Department
-      if (data.type && data.type === 'Department' && currentTransaction?.type === 'Event') {
-        // 1. ลบข้อมูลออกจาก Event
-        const remainingEvents = events.filter(event => event.id !== transactionId);
+  updateTransactionStatus: async (id: string, newStatus: StatusType) => {
+    try {
+      const events = await loadFromStorage('Event');
+      const updatedEvents = events.map(event => 
+        event.id === id ? { ...event, status: newStatus } : event
+      );
+      await saveToStorage(updatedEvents, 'Event');
+      return updatedEvents;
+    } catch (error) {
+      console.error('Error updating transaction status:', error);
+      throw error;
+    }
+  },
+
+  updateTransaction: async (id: string, data: Partial<Transaction>) => {
+    try {
+      const events = await loadFromStorage('Event');
+      const currentTransaction = events.find(event => event.id === id);
+      
+      if (!currentTransaction) {
+        throw new Error('Transaction not found');
+      }
+
+      if (data.type && data.type !== currentTransaction.type) {
+        // Handle type change (Event <-> Department)
+        const remainingEvents = events.filter(event => event.id !== id);
         const reorderedEvents = reorderIds(remainingEvents);
-        saveToStorage(reorderedEvents);
+        await saveToStorage(reorderedEvents, currentTransaction.type);
 
-        // 2. เพิ่มข้อมูลไปยัง Department
-        const departmentAPI = require('./mockDepartmentAPI').departmentAPI;
-        const departmentTransactions = departmentAPI.getTransactions();
-        const newDepartmentId = String(departmentTransactions.length + 1).padStart(3, '0');
+        const targetTypeEvents = await loadFromStorage(data.type);
+        const newId = String(targetTypeEvents.length + 1).padStart(3, '0');
 
         const movedTransaction: Transaction = {
           ...currentTransaction,
           ...data,
-          id: newDepartmentId,
-          name: `Department ${newDepartmentId}`,
-          type: 'Department',
-          date: new Date().toLocaleString('en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-          })
+          id: newId,
+          name: `${data.type} ${newId}`,
+          type: data.type,
+          date: formatDate()
         };
 
-        departmentTransactions.push(movedTransaction);
-        localStorage.setItem(
-          `${email}_department_transactions`,
-          JSON.stringify(departmentTransactions)
-        );
+        const updatedTargetEvents = [...targetTypeEvents, movedTransaction];
+        await saveToStorage(updatedTargetEvents, data.type);
 
         return reorderedEvents;
       }
 
-      // ถ้าไม่มีการเปลี่ยน Type ให้ทำงานปกติ
+      // Regular update
       const updatedEvents = events.map(event =>
-        event.id === transactionId
+        event.id === id
           ? {
               ...event,
               ...data,
-              date: new Date().toLocaleString('en-US', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              })
+              date: formatDate()
             }
           : event
       );
       
-      saveToStorage(updatedEvents);
+      await saveToStorage(updatedEvents, 'Event');
       return updatedEvents;
     } catch (error) {
       console.error('Error updating transaction:', error);
-      return [];
+      throw error;
     }
   },
 
-  addFramesToTransaction: (transactionId: string, frameIds: string[]): Transaction[] => {
-    const events = loadFromStorage();
-    const updatedEvents = events.map(event =>
-      event.id === transactionId
-        ? {
-            ...event,
-            frames: [...new Set([...event.frames, ...frameIds])]
-          }
-        : event
-    );
-    saveToStorage(updatedEvents);
-    return updatedEvents;
-  },
-
-  removeFrameFromTransaction: (transactionId: string, frameId: string): Transaction[] => {
-    const events = loadFromStorage();
-    const updatedEvents = events.map(event =>
-      event.id === transactionId
-        ? {
-            ...event,
-            frames: event.frames.filter(id => id !== frameId)
-          }
-        : event
-    );
-    saveToStorage(updatedEvents);
-    return updatedEvents;
-  },
-
-  addStickersToTransaction: (transactionId: string, stickerIds: string[]): Transaction[] => {
-    const events = loadFromStorage();
-    const updatedEvents = events.map(event =>
-      event.id === transactionId
-        ? {
-            ...event,
-            stickers: [...new Set([...event.stickers, ...stickerIds])]
-          }
-        : event
-    );
-    saveToStorage(updatedEvents);
-    return updatedEvents;
-  },
-
-  removeStickerFromTransaction: (transactionId: string, stickerId: string): Transaction[] => {
-    const events = loadFromStorage();
-    const updatedEvents = events.map(event =>
-      event.id === transactionId
-        ? {
-            ...event,
-            stickers: event.stickers.filter(id => id !== stickerId)
-          }
-        : event
-    );
-    saveToStorage(updatedEvents);
-    return updatedEvents;
-  },
-
-  searchTransactions: (searchTerm: string): Transaction[] => {
-    const events = loadFromStorage();
-    if (!searchTerm) return events;
-
-    const lowercaseSearch = searchTerm.toLowerCase();
-    return events.filter(event => 
-      event.id.toLowerCase().includes(lowercaseSearch) ||
-      event.name.toLowerCase().includes(lowercaseSearch) ||
-      event.ipAddress.toLowerCase().includes(lowercaseSearch) ||
-      event.type.toLowerCase().includes(lowercaseSearch) ||
-      event.status.toLowerCase().includes(lowercaseSearch) ||
-      event.date.toLowerCase().includes(lowercaseSearch)
-    );
-  },
-
-  deleteTransaction: (transactionId: string): Transaction[] => {
-    const events = loadFromStorage();
-    const updatedEvents = events.filter(event => event.id !== transactionId);
-    const reorderedEvents = reorderIds(updatedEvents);
-    saveToStorage(reorderedEvents);
-    return reorderedEvents;
-  },
-
-  addTransaction: (transaction: Omit<Transaction, 'id'>): Transaction[] => {
-    const events = loadFromStorage();
-    const newId = String(events.length + 1).padStart(3, '0');
-    const newTransaction: Transaction = {
-      ...transaction,
-      id: newId,
-      name: `Event ${newId}`,
-      type: 'Event',
-      frames: transaction.frames || [],
-      stickers: transaction.stickers || [],
-      date: new Date().toLocaleString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      })
-    };
-    const updatedEvents = [...events, newTransaction];
-    saveToStorage(updatedEvents);
-    return updatedEvents;
-  },
-
-  resetToDefault: (): Transaction[] => {
-    saveToStorage(DEFAULT_EVENTS);
-    return DEFAULT_EVENTS;
-  },
-
-  initialize: (): void => {
-    const currentProfile = localStorage.getItem('adminProfile');
-    if (currentProfile) {
-      const { email } = JSON.parse(currentProfile);
-      const existingData = localStorage.getItem(getStorageKey(email));
-      if (!existingData) {
-        saveToStorage(DEFAULT_EVENTS);
-      }
-    }
-  },
-
-  clearStorage: (): void => {
+  addFramesToTransaction: async (id: string, frameIds: string[]) => {
     try {
-      const currentProfile = localStorage.getItem('adminProfile');
-      if (currentProfile) {
-        const { email } = JSON.parse(currentProfile);
-        localStorage.removeItem(getStorageKey(email));
+      const events = await loadFromStorage('Event');
+      const updatedEvents = events.map(event =>
+        event.id === id
+          ? {
+              ...event,
+              frames: [...new Set([...event.frames, ...frameIds])]
+            }
+          : event
+      );
+      await saveToStorage(updatedEvents, 'Event');
+      return updatedEvents;
+    } catch (error) {
+      console.error('Error adding frames to transaction:', error);
+      throw error;
+    }
+  },
+
+  removeFrameFromTransaction: async (id: string, frameId: string) => {
+    try {
+      const events = await loadFromStorage('Event');
+      const updatedEvents = events.map(event =>
+        event.id === id
+          ? {
+              ...event,
+              frames: event.frames.filter(fId => fId !== frameId)
+            }
+          : event
+      );
+      await saveToStorage(updatedEvents, 'Event');
+      return updatedEvents;
+    } catch (error) {
+      console.error('Error removing frame from transaction:', error);
+      throw error;
+    }
+  },
+
+  addStickersToTransaction: async (id: string, stickerIds: string[]) => {
+    try {
+      const events = await loadFromStorage('Event');
+      const updatedEvents = events.map(event =>
+        event.id === id
+          ? {
+              ...event,
+              stickers: [...new Set([...event.stickers, ...stickerIds])]
+            }
+          : event
+      );
+      await saveToStorage(updatedEvents, 'Event');
+      return updatedEvents;
+    } catch (error) {
+      console.error('Error adding stickers to transaction:', error);
+      throw error;
+    }
+  },
+
+  removeStickerFromTransaction: async (id: string, stickerId: string) => {
+    try {
+      const events = await loadFromStorage('Event');
+      const updatedEvents = events.map(event =>
+        event.id === id
+          ? {
+              ...event,
+              stickers: event.stickers.filter(sId => sId !== stickerId)
+            }
+          : event
+      );
+      await saveToStorage(updatedEvents, 'Event');
+      return updatedEvents;
+    } catch (error) {
+      console.error('Error removing sticker from transaction:', error);
+      throw error;
+    }
+  },
+
+  searchTransactions: async (searchTerm: string) => {
+    try {
+      const events = await loadFromStorage('Event');
+      if (!searchTerm) return events;
+
+      const term = searchTerm.toLowerCase();
+      return events.filter(event => 
+        event.id.toLowerCase().includes(term) ||
+        event.name.toLowerCase().includes(term) ||
+        event.ipAddress.toLowerCase().includes(term) ||
+        event.type.toLowerCase().includes(term) ||
+        event.status.toLowerCase().includes(term) ||
+        event.date.toLowerCase().includes(term)
+      );
+    } catch (error) {
+      console.error('Error searching transactions:', error);
+      throw error;
+    }
+  },
+
+  deleteTransaction: async (id: string) => {
+    try {
+      const events = await loadFromStorage('Event');
+      const filteredEvents = events.filter(event => event.id !== id);
+      const reorderedEvents = reorderIds(filteredEvents);
+      await saveToStorage(reorderedEvents, 'Event');
+      return reorderedEvents;
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      throw error;
+    }
+  },
+
+  addTransaction: async (data: TransactionUploadData) => {
+    try {
+      const events = await loadFromStorage('Event');
+      const newId = String(events.length + 1).padStart(3, '0');
+      const newTransaction: Transaction = {
+        ...data,
+        id: newId,
+        name: `${data.type} ${newId}`,
+        frames: data.frames || [],
+        stickers: data.stickers || [],
+        date: formatDate()
+      };
+      const updatedEvents = [...events, newTransaction];
+      await saveToStorage(updatedEvents, 'Event');
+      return updatedEvents;
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      throw error;
+    }
+  },
+
+  resetToDefault: async () => {
+    try {
+      await saveToStorage(DEFAULT_EVENTS, 'Event');
+      return DEFAULT_EVENTS;
+    } catch (error) {
+      console.error('Error resetting to default:', error);
+      throw error;
+    }
+  },
+
+  initialize: async () => {
+    try {
+      const events = await loadFromStorage('Event');
+      if (!events.length) {
+        await saveToStorage(DEFAULT_EVENTS, 'Event');
       }
     } catch (error) {
-      console.error('Error clearing events:', error);
+      console.error('Error initializing transactions:', error);
+      throw error;
+    }
+  },
+
+  clearStorage: async () => {
+    try {
+      localStorage.removeItem(getStorageKey('Event'));
+      localStorage.removeItem(getStorageKey('Department'));
+    } catch (error) {
+      console.error('Error clearing storage:', error);
+      throw error;
     }
   }
-
-  
 };
 
-export default eventAPI;
+export default transactionService;
