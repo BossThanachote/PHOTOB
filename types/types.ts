@@ -41,6 +41,7 @@ export interface Sticker {
   no: string;
   stickerName: string;
   sticker: string;
+  name?: string; // เพิ่ม name เป็น optional
   status: StatusType;
   date: string;
 }
