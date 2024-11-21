@@ -46,12 +46,14 @@ export default function MachineDashEvent() {
     try {
       setIsLoading(true);
       const resetData = await transactionService.resetToDefault();
-      setTransactions(resetData);
-      setTotalItems(resetData.length);
+      setTransactions(resetData || []);
+      setTotalItems(resetData?.length || 0);
       setError(null);
     } catch (error) {
       console.error('Error resetting data:', error);
       setError('Failed to reset data');
+      setTransactions([]);
+      setTotalItems(0);
     } finally {
       setIsLoading(false);
     }
@@ -63,12 +65,14 @@ export default function MachineDashEvent() {
       try {
         setIsLoading(true);
         const data = await transactionService.getTransactions();
-        setTransactions(data);
-        setTotalItems(data.length);
+        setTransactions(data || []);
+        setTotalItems(data?.length || 0);
         setError(null);
       } catch (error) {
         console.error('Error loading transactions:', error);
         setError('Failed to load transactions');
+        setTransactions([]);
+        setTotalItems(0);
       } finally {
         setIsLoading(false);
       }
@@ -83,13 +87,15 @@ export default function MachineDashEvent() {
       try {
         setIsLoading(true);
         const results = await transactionService.searchTransactions(searchTerm);
-        setTransactions(results);
-        setTotalItems(results.length);
+        setTransactions(results || []);
+        setTotalItems(results?.length || 0);
         setCurrentPage(1);
         setError(null);
       } catch (error) {
         console.error('Error searching transactions:', error);
         setError('Failed to search transactions');
+        setTransactions([]);
+        setTotalItems(0);
       } finally {
         setIsLoading(false);
       }
@@ -117,7 +123,7 @@ export default function MachineDashEvent() {
     try {
       setIsLoading(true);
       const updatedTransactions = await transactionService.updateTransactionStatus(transactionId, newStatus);
-      setTransactions(updatedTransactions);
+      setTransactions(updatedTransactions || []);
       setOpenDropdownId(null);
       setError(null);
     } catch (error) {
@@ -168,8 +174,8 @@ export default function MachineDashEvent() {
           setIsLoading(true);
           if (window.confirm('Are you sure you want to delete this transaction?')) {
             const updatedTransactions = await transactionService.deleteTransaction(id);
-            setTransactions(updatedTransactions);
-            setTotalItems(updatedTransactions.length);
+            setTransactions(updatedTransactions || []);
+            setTotalItems(updatedTransactions?.length || 0);
             setOpenDropdownId(null);
             setError(null);
           }

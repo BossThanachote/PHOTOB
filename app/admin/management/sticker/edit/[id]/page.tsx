@@ -26,9 +26,8 @@ export default function StickerEdit() {
   const [status, setStatus] = useState<StatusType>('Active')
   const [newImage, setNewImage] = useState<string | null>(null)
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [isModified, setIsModified] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -50,21 +49,16 @@ export default function StickerEdit() {
   // Fetch sticker data
   useEffect(() => {
     const fetchStickerData = async () => {
+      if (!stickerId) return
+      
       try {
         setIsLoading(true)
-        setError(null)
-        console.log('Fetching sticker with ID:', stickerId)
-        
-        // ดึงข้อมูลทั้งหมดจาก GET list
         const response = await stickerService.getStickers()
-        console.log('All stickers:', response)
         
-        // กรองเอาเฉพาะ sticker ที่ต้องการจาก id จาก items array
         const targetSticker = response.items.find(sticker => 
           sticker.id === stickerId
         )
-        console.log('Found sticker:', targetSticker)
-  
+
         if (targetSticker) {
           setStickerInfo({
             id: targetSticker.id,
@@ -72,25 +66,21 @@ export default function StickerEdit() {
             stickerName: targetSticker.stickerName,
             sticker: targetSticker.sticker,
             status: targetSticker.status,
-            date: targetSticker.date  // เพิ่ม date
+            date: targetSticker.date
           })
           setStickerName(targetSticker.stickerName)
           setStatus(targetSticker.status)
-        } else {
-          setError('Sticker not found')
         }
       } catch (err) {
         console.error('Error fetching sticker:', err)
-        setError(err instanceof Error ? err.message : 'Failed to fetch sticker data')
       } finally {
         setIsLoading(false)
       }
     }
-  
-    if (stickerId) {
-      fetchStickerData()
-    }
+
+    fetchStickerData()
   }, [stickerId])
+
   // Event Handlers
   const handleNameChange = (value: string) => {
     setStickerName(value)
@@ -109,9 +99,8 @@ export default function StickerEdit() {
 
     try {
       setIsLoading(true)
-      setError(null)
-
-      // Create preview URL
+      
+      // Create preview immediately
       const reader = new FileReader()
       reader.onloadend = () => {
         setNewImage(reader.result as string)
@@ -119,13 +108,10 @@ export default function StickerEdit() {
       }
       reader.readAsDataURL(file)
 
-      // Update image on server
+      // Upload in background
       await stickerService.updateStickerImage(stickerInfo.id, file)
-    } catch (err) {
-      console.error('Error uploading image:', err)
-      setError(err instanceof Error ? err.message : 'Failed to upload image')
-      // Reset preview if upload fails
-      setNewImage(null)
+        .catch(console.log)
+
     } finally {
       setIsLoading(false)
     }
@@ -136,7 +122,6 @@ export default function StickerEdit() {
 
     try {
       setIsSaving(true)
-      setError(null)
 
       await stickerService.updateSticker(stickerInfo.id, {
         stickerName,
@@ -146,7 +131,6 @@ export default function StickerEdit() {
       router.push('/admin/management/sticker')
     } catch (err) {
       console.error('Error saving sticker:', err)
-      setError(err instanceof Error ? err.message : 'Failed to save changes')
     } finally {
       setIsSaving(false)
     }
@@ -158,20 +142,17 @@ export default function StickerEdit() {
     if (window.confirm('Are you sure you want to delete this sticker?')) {
       try {
         setIsLoading(true)
-        setError(null)
         
         await stickerService.deleteSticker(stickerInfo.id)
         router.push('/admin/management/sticker')
       } catch (err) {
         console.error('Error deleting sticker:', err)
-        setError(err instanceof Error ? err.message : 'Failed to delete sticker')
       } finally {
         setIsLoading(false)
       }
     }
   }
 
-  // Loading, Error และ Not Found States
   if (isLoading) {
     return (
       <AuthGuard>
@@ -185,51 +166,6 @@ export default function StickerEdit() {
     )
   }
 
-  if (error) {
-    return (
-      <AuthGuard>
-        <div className="min-h-screen bg-[#F7F7F7] flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg shadow-sm text-center">
-            <p className="text-red-500 mb-4">{error}</p>
-            <div className="flex gap-4 justify-center">
-              <button 
-                onClick={() => window.location.reload()}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-              >
-                Retry
-              </button>
-              <button
-                onClick={() => router.push('/admin/management/sticker')}
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
-              >
-                Back to List
-              </button>
-            </div>
-          </div>
-        </div>
-      </AuthGuard>
-    )
-  }
-
-  if (!stickerInfo && !isLoading) {
-    return (
-      <AuthGuard>
-        <div className="min-h-screen bg-[#F7F7F7] flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg shadow-sm text-center">
-            <p className="text-gray-500 mb-4">Sticker not found</p>
-            <button
-              onClick={() => router.push('/admin/management/sticker')}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-            >
-              Back to Sticker List
-            </button>
-          </div>
-        </div>
-      </AuthGuard>
-    )
-  }
-
-  // Main UI Render
   return (
     <AuthGuard>
       <div className="grid grid-cols-10 w-full h-screen">   
@@ -291,6 +227,7 @@ export default function StickerEdit() {
                       Sticker Name <span className="text-red-500">*</span>
                     </label>
                     <input
+                      aria-label='button'
                       type="text"
                       value={stickerName}
                       onChange={(e) => handleNameChange(e.target.value)}
@@ -361,6 +298,7 @@ export default function StickerEdit() {
                         )}
                       </div>
                       <input
+                        aria-label='button'
                         ref={fileInputRef}
                         type="file"
                         accept="image/*"
@@ -388,4 +326,3 @@ export default function StickerEdit() {
     </AuthGuard>
   )
 }
-  

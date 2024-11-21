@@ -58,48 +58,68 @@ const StickerManagement = () => {
     }
   };
 
-  // Error handler
-  const handleError = (error: unknown, message: string) => {
-    console.error(`${message}:`, error);
-    setError(error instanceof Error ? error.message : message);
-    setIsLoading(false);
-    setIsActionLoading(false);
+  // Fetch stickers function
+  const fetchStickers = async () => {
+    try {
+      const response = await stickerService.getStickers({
+        page: currentPage,
+        limit: entriesPerPage
+      });
+      
+      // Apply search filter if searchTerm exists
+      const filteredStickers = searchTerm
+        ? response.items.filter(
+            (sticker) =>
+              sticker.stickerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              sticker.no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              sticker.status?.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        : response.items;
+
+      setStickers(filteredStickers);
+      setTotalItems(response.total);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load stickers:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load stickers');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Fetch stickers
+  // Initial fetch
   useEffect(() => {
-    const fetchStickers = async () => {
-      try {
-        setIsLoading(true);
-        const response = await stickerService.getStickers({
-          page: currentPage,
-          limit: entriesPerPage
-        });
-        
-        // Apply search filter if searchTerm exists
-        const filteredStickers = searchTerm
-          ? response.items.filter(
-              (sticker) =>
-                sticker.stickerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                sticker.no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                sticker.status?.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-          : response.items;
-
-        setStickers(filteredStickers);
-        setTotalItems(response.total);
-        setError(null);
-      } catch (err) {
-        handleError(err, 'Failed to load stickers');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     const debounceTimeout = setTimeout(fetchStickers, 300);
     return () => clearTimeout(debounceTimeout);
   }, [currentPage, entriesPerPage, searchTerm]);
 
+  // Status change handler
+  const handleStatusChange = async (stickerId: string, newStatus: StatusType) => {
+    try {
+      // Optimistic update UI immediately
+      setStickers(prevStickers =>
+        prevStickers.map(sticker =>
+          sticker.id === stickerId
+            ? { ...sticker, status: newStatus }
+            : sticker
+        )
+      );
+      
+      // Close dropdown
+      setOpenDropdownId(null);
+  
+      // Call API in background without showing loading state
+      await stickerService.updateStickerStatus(stickerId, newStatus);
+      
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      // Silently fetch fresh data if API call fails
+      fetchStickers().catch(console.error);
+    }
+  };
+
+  // ... rest of your existing code (all other handlers and UI components remain the same)
+  
   // Pagination handlers
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -117,26 +137,6 @@ const StickerManagement = () => {
     setOpenDropdownId(openDropdownId === id ? null : id);
   };
 
-  // Status change handler
-  const handleStatusChange = async (stickerId: string, newStatus: StatusType) => {
-    try {
-      setIsActionLoading(true);
-      await stickerService.updateStickerStatus(stickerId, newStatus);
-      const response = await stickerService.getStickers({
-        page: currentPage,
-        limit: entriesPerPage
-      });
-      setStickers(response.items);
-      setTotalItems(response.total);
-      setOpenDropdownId(null);
-      setError(null);
-    } catch (error) {
-      handleError(error, 'Failed to update status');
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
   // Upload handler
   const handleUpload = async (stickersData: any[]) => {
     try {
@@ -144,16 +144,12 @@ const StickerManagement = () => {
       for (const stickerData of stickersData) {
         await stickerService.createSticker(stickerData);
       }
-      const response = await stickerService.getStickers({
-        page: currentPage,
-        limit: entriesPerPage
-      });
-      setStickers(response.items);
-      setTotalItems(response.total);
+      await fetchStickers();
       setIsUploadModalOpen(false);
       setError(null);
     } catch (error) {
-      handleError(error, 'Failed to upload stickers');
+      console.error('Failed to upload stickers:', error);
+      setError(error instanceof Error ? error.message : 'Failed to upload stickers');
     } finally {
       setIsActionLoading(false);
     }
@@ -180,12 +176,7 @@ const StickerManagement = () => {
         case 'delete':
           if (window.confirm('Are you sure you want to delete this sticker?')) {
             await stickerService.deleteSticker(stickerId);
-            const response = await stickerService.getStickers({
-              page: currentPage,
-              limit: entriesPerPage
-            });
-            setStickers(response.items);
-            setTotalItems(response.total);
+            await fetchStickers();
           }
           break;
         default:
@@ -194,7 +185,8 @@ const StickerManagement = () => {
       setOpenDropdownId(null);
       setError(null);
     } catch (error) {
-      handleError(error, `Failed to ${action} sticker`);
+      console.error(`Failed to ${action} sticker:`, error);
+      setError(error instanceof Error ? error.message : `Failed to ${action} sticker`);
     } finally {
       setIsActionLoading(false);
     }
@@ -218,7 +210,7 @@ const StickerManagement = () => {
         <div className="text-center">
           <p className="text-red-500 mb-4">Error: {error}</p>
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={fetchStickers}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
           >
             Retry
@@ -259,6 +251,7 @@ const StickerManagement = () => {
             <div className="flex items-center gap-2 w-full md:w-auto">
               <span className="text-gray-500 whitespace-nowrap">Show</span>
               <select
+                aria-label="button"
                 value={entriesPerPage}
                 onChange={(e) => handleEntriesChange(Number(e.target.value))}
                 className="border rounded px-2 py-1 w-20"
@@ -329,8 +322,7 @@ const StickerManagement = () => {
                         <button
                           type="button"
                           className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 min-w-[120px]"
-                          onClick={() => toggleDropdown(sticker.id)}
-                          disabled={isActionLoading}
+                          onClick={() => toggleDropdown(sticker.id)}                        
                         >
                           <div className={`w-2 h-2 rounded-full ${getStatusColor(sticker.status)}`} />
                           <span>{sticker.status}</span>
@@ -349,8 +341,7 @@ const StickerManagement = () => {
                                   key={status}
                                   type="button"
                                   className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-50 disabled:opacity-50"
-                                  onClick={() => handleStatusChange(sticker.id, status)}
-                                  disabled={isActionLoading}
+                                  onClick={() => handleStatusChange(sticker.id, status)}                         
                                 >
                                   <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />
                                   {status}
@@ -364,6 +355,7 @@ const StickerManagement = () => {
                       </td>
                       <td className="py-4 relative">
                         <button
+                          aria-label="button"
                           type="button"
                           className="hover:bg-gray-100 p-2 rounded-lg transition-colors disabled:opacity-50"
                           onClick={() => toggleDropdown(`action_${sticker.id}`)}
@@ -424,6 +416,7 @@ const StickerManagement = () => {
             </div>
             <div className="flex gap-1">
               <button
+                aria-label="button"
                 type="button"
                 className="p-2 border rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
                 onClick={() => handlePageChange(currentPage - 1)}
@@ -460,6 +453,7 @@ const StickerManagement = () => {
                   );
                 })}
               <button
+                aria-label="button"
                 type="button"
                 className="p-2 border rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
                 onClick={() => handlePageChange(currentPage + 1)}

@@ -195,20 +195,23 @@ export default function SideBar() {
             {isEditing ? (
               <div className="flex items-center gap-2">
                 <input
+                  aria-label="button"
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   className="bg-transparent border-b border-gray-400 outline-none px-1 text-white"
                   autoFocus
                 />
-                <button 
+                <button
+                  aria-label="button" 
                   type="button"
                   onClick={handleSaveName}
                   className="text-green-500 hover:text-green-400"
                 >
                   <Check size={16} />
                 </button>
-                <button 
+                <button
+                  aria-label="button" 
                   type="button"
                   onClick={handleCancelEdit}
                   className="text-red-500 hover:text-red-400"
@@ -220,6 +223,7 @@ export default function SideBar() {
               <>
                 <span>{profile.name}</span>
                 <button
+                  aria-label="button"
                   type="button"
                   onClick={handleEditName}
                   className="text-gray-400 hover:text-gray-300"

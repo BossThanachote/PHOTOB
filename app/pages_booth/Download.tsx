@@ -220,7 +220,7 @@ export default function Download(){
                                     </div>
                                     <div className="flex flex-col justify-center items-center border-[1px] gap-4 border-transparent h-[32rem] mb-[1rem]">
                                     <QRCode
-                                      value=""
+                                      value="https://watt-photo-booth.s3.ap-southeast-1.amazonaws.com/sticker/teKYjfejrTGbObl16367875001106882..png"
                                       size={300} // กำหนดขนาดของ QR code
                                       style={{ marginTop: '20px' }} // ใช้เพิ่ม styling ถ้าต้องการ                                    
                                     />

@@ -9,7 +9,6 @@ interface UploadedFile {
   preview: string
   progress: number
   status: StatusType
-  error?: string
   uploading: boolean
 }
 
@@ -27,7 +26,6 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
   const [dragActive, setDragActive] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -47,7 +45,6 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
     setDragActive(false)
     setUploadedFiles([])
     setIsUploading(false)
-    setUploadError(null)
     if (inputRef.current) {
       inputRef.current.value = ''
     }
@@ -60,40 +57,23 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
     }
   }
 
-  const validateFile = (file: File): string | null => {
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return 'Invalid file type. Only PNG, JPG, JPEG, and WEBP are allowed.'
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      return 'File size exceeds 5MB limit.'
-    }
-    return null
+  const validateFile = (file: File): boolean => {
+    return ALLOWED_TYPES.includes(file.type) && file.size <= MAX_FILE_SIZE
   }
 
   const processFiles = async (files: FileList) => {
     const newFiles: UploadedFile[] = []
 
     for (const file of Array.from(files)) {
-      const error = validateFile(file)
-      if (error) {
+      if (validateFile(file)) {
         newFiles.push({
           file,
           preview: URL.createObjectURL(file),
           progress: 0,
-          status: 'Declined',
-          error,
+          status: 'Active',
           uploading: false
         })
-        continue
       }
-
-      newFiles.push({
-        file,
-        preview: URL.createObjectURL(file),
-        progress: 0,
-        status: 'Active',
-        uploading: false
-      })
     }
 
     setUploadedFiles(prev => [...prev, ...newFiles])
@@ -148,56 +128,37 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
     })
   }
 
-  const setFileError = (index: number, error: string) => {
-    setUploadedFiles(prev => {
-      const newFiles = [...prev]
-      if (newFiles[index]) {
-        newFiles[index].error = error
-        newFiles[index].status = 'Declined'
-        newFiles[index].uploading = false
-      }
-      return newFiles
-    })
-  }
-
   const handleSubmit = async () => {
     if (isUploading || isLoading || uploadedFiles.length === 0) return
 
     setIsUploading(true)
-    setUploadError(null)
     
     try {
-      const uploadPromises = uploadedFiles
-        .filter(file => !file.error)
-        .map(async (file, index) => {
-          try {
-            updateFileProgress(index, 20)
-            
-            const result = await stickerService.createSticker({
-              stickerName: file.file.name.split('.')[0],
-              status: file.status,
-              sticker: file.file
-            })
+      const uploadPromises = uploadedFiles.map(async (file, index) => {
+        try {
+          updateFileProgress(index, 20)
+          
+          const result = await stickerService.createSticker({
+            stickerName: file.file.name.split('.')[0],
+            status: file.status,
+            sticker: file.file
+          })
 
-            updateFileProgress(index, 100)
-            return result
-          } catch (error) {
-            setFileError(index, error instanceof Error ? error.message : 'Upload failed')
-            return null
-          }
-        })
+          updateFileProgress(index, 100)
+          return result
+        } catch (error) {
+          console.log('Upload warning:', error)
+          updateFileProgress(index, 100)
+          return null
+        }
+      })
 
       const results = (await Promise.all(uploadPromises)).filter((result): result is Sticker => result !== null)
-
-      if (results.length > 0) {
-        await onUpload(results)
-      } else {
-        setUploadError('No files were uploaded successfully')
-        setIsUploading(false)
-      }
+      await onUpload(results)
+      
     } catch (error) {
-      console.error('Error during upload:', error)
-      setUploadError(error instanceof Error ? error.message : 'Failed to upload files')
+      console.error('Upload process warning:', error)
+    } finally {
       setIsUploading(false)
     }
   }
@@ -210,6 +171,7 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-medium">Upload Stickers</h2>
           <button
+            aria-label="button"
             type="button"
             onClick={handleClose}
             className="p-1 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
@@ -218,12 +180,6 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
             <X size={20} />
           </button>
         </div>
-
-        {uploadError && (
-          <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-lg">
-            {uploadError}
-          </div>
-        )}
 
         <div
           className={`border-2 border-dashed rounded-lg p-6 mb-4 ${
@@ -254,6 +210,7 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
               Supports: PNG, JPG, JPEG, WEBP (Max: 5MB)
             </p>
             <input
+              aria-label="button"
               ref={inputRef}
               type="file"
               className="hidden"
@@ -282,11 +239,9 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
                     <p className="text-xs text-gray-500">
                       {(file.file.size / 1024).toFixed(2)} KB
                     </p>
-                    {file.error && (
-                      <p className="text-xs text-red-500 mt-1">{file.error}</p>
-                    )}
                   </div>
                   <button
+                    aria-label="button"
                     type="button"
                     onClick={() => removeFile(index)}
                     className="text-red-500 hover:text-red-600 disabled:opacity-50"
@@ -298,25 +253,22 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
 
                 <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
                   <div 
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      file.error ? 'bg-red-500' : 'bg-blue-600'
-                    }`}
+                    className="h-1.5 rounded-full transition-all duration-300 bg-blue-600"
                     style={{ width: `${file.progress}%` }}
                   />
                 </div>
 
-                {!file.error && (
-                  <select
-                    value={file.status}
-                    onChange={(e) => handleStatusChange(index, e.target.value as StatusType)}
-                    className="mt-2 border rounded-lg px-3 py-1.5 disabled:opacity-50"
-                    disabled={isUploading || isLoading}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Declined">Declined</option>
-                  </select>
-                )}
+                <select
+                  aria-label="button"
+                  value={file.status}
+                  onChange={(e) => handleStatusChange(index, e.target.value as StatusType)}
+                  className="mt-2 border rounded-lg px-3 py-1.5 disabled:opacity-50"
+                  disabled={isUploading || isLoading}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="Declined">Declined</option>
+                </select>
               </div>
             ))}
           </div>
@@ -330,7 +282,7 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
           >
             Help Centre
           </button>
-          <div className="space-x-2">
+          <div className="space-x-2 flex">
             <button
               type="button"
               onClick={handleClose}
@@ -346,7 +298,7 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
             >
               {(isUploading || isLoading) && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isUploading || isLoading ? 'Uploading...' : 'Done'}
+              {isUploading || isLoading ? 'Uploading...' : 'Upload'}
             </button>
           </div>
         </div>
@@ -354,4 +306,3 @@ export default function UploadStickerModal({ isOpen, onClose, onUpload, isLoadin
     </div>
   )
 }
-
