@@ -39,7 +39,7 @@ const mapFrameResponse = (apiFrame: any): Frame => ({
   frameName: apiFrame.name,
   frame: apiFrame.image_url,
   status: apiFrame.status.charAt(0).toUpperCase() + apiFrame.status.slice(1) as StatusType,
-  shot: apiFrame.shot || 0,
+  shot: Number(apiFrame.shot) || 0, // Ensure shot is always a number
   date: apiFrame.created_at || new Date().toISOString()
 });
 
@@ -55,7 +55,7 @@ const prepareFormData = async (data: FrameUploadData): Promise<FormData> => {
   const formData = new FormData();
   formData.append('name', data.frameName);
   formData.append('status', data.status.toLowerCase());
-  formData.append('shot', data.shot.toString());
+  formData.append('shot', Number(data.shot).toString()); // Ensure shot is sent as string of number
 
   if (isFileOrBlob(data.frame)) {
     formData.append('file', data.frame);
@@ -179,13 +179,24 @@ export const frameService = {
         }
       );
 
-      const result = await handleApiResponse<{ data: any }>(response);
+      const result = await handleApiResponse<{ status: string; message: string; data?: any }>(response);
+      
+      // ตรวจสอบว่ามี data กลับมาไหม
+      if (!result.data) {
+        // ถ้าไม่มี data แต่ status success ให้ fetch ข้อมูล frame ใหม่
+        if (result.status === 'success') {
+          const updatedFrame = await frameService.getFrameById(id);
+          return updatedFrame;
+        }
+        throw new Error('Failed to update frame: No data returned');
+      }
+
       return mapFrameResponse(result.data);
     } catch (error) {
       console.error(`Error updating frame ${id}:`, error);
       throw error;
     }
-  },
+},
 
   // Update frame status
   updateFrameStatus: async (id: string, status: StatusType): Promise<Frame> => {

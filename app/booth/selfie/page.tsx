@@ -2,11 +2,13 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { BiSolidLeftArrow, BiSolidRightArrow } from "react-icons/bi";
-import state from "../valtio_config";
+import state from "@/app/valtio_config";
 import { useSnapshot } from "valtio";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function Selfie() {
+    const router = useRouter();
     const snap = useSnapshot(state);
     const [isExiting, setIsExiting] = useState(false); 
     const [countdown, setCountdown] = useState(12); // เริ่มต้นที่ 12
@@ -21,70 +23,83 @@ export default function Selfie() {
     
     const handleNext = () => {
       setTimeout(() => {
-          state.intro = 4; 
+          state.intro = 6; 
       }, 1200); 
   };
 
-    useEffect(() => {
-      if (snap.intro === 3) {
-          // เริ่มการนับถอยหลังเมื่อ intro เป็น 3
-          setCountdown(12); // รีเซ็ต countdown
-          setCurrentStep(1); // รีเซ็ต currentStep
-          setDoneDelay(false); // รีเซ็ต doneDelay
-          startCamera(); // เริ่มต้นกล้อง
-      }
-  }, [snap.intro]);
-
   useEffect(() => {
+    if (window.location.pathname === '/booth/selfie') {
+      state.intro = 5;
+      localStorage.setItem('currentIntro', '5');
+    }
+   }, []);
+   
+   // เพิ่ม useEffect สำหรับจัดการการย้อนกลับ
+   useEffect(() => {
+    const handlePopState = () => {
+      const savedIntro = localStorage.getItem('currentIntro');
+      if (savedIntro) {
+        state.intro = parseInt(savedIntro);
+      }
+    };
+   
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+   }, []);
+   
+   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     const localCountdown = { value: 12 };
-    const localStep = { value: 1 }; 
-
-    if (snap.intro === 3 && localStep.value <= maxSteps) {
-        interval = setInterval(() => {
-            localCountdown.value -= 1;
-
-            if (localCountdown.value > 0) {
-                setCountdown(localCountdown.value); 
-            } else {
-                captureImage(); 
-                localStep.value += 1;
-                setCurrentStep(localStep.value); 
-
-                if (localStep.value > maxSteps) {
-                    clearInterval(interval!); 
-                    // ทำการอัพเดตค่า intro เป็น 6 เมื่อเกิน maxSteps
-                    setTimeout(() => {
-                        console.log("Setting intro to 6");
-                        state.intro = 4;
-                        stopCamera(); 
-                    }, 2000);
-                }
-
-                localCountdown.value = 12; 
-                setCountdown(localCountdown.value); 
-            }
-        }, 1000);
-    }
-
-    return () => {
-        if (interval) {
-            clearInterval(interval);
+    const localStep = { value: 1 };
+   
+    if (snap.intro === 5 && localStep.value <= maxSteps) {
+      interval = setInterval(() => {
+        localCountdown.value -= 1;
+   
+        if (localCountdown.value > 0) {
+          setCountdown(localCountdown.value);
+        } else {
+          captureImage();
+          localStep.value += 1;
+          setCurrentStep(localStep.value);
+   
+          if (localStep.value > maxSteps) {
+            clearInterval(interval!);
+            setTimeout(() => {
+              console.log("Setting intro to 6");
+              state.intro = 6;
+              localStorage.setItem('currentIntro', '6');
+              stopCamera();
+              // นำทางไปหน้า select หลังจาก delay
+              setTimeout(() => {
+                router.push('/booth/select');
+              }, 0);
+            }, 1000);
+          }
+   
+          localCountdown.value = 12;
+          setCountdown(localCountdown.value);
         }
-    };      
-}, [snap.intro, doneDelay, maxSteps]);
-    
-    const startCamera = () => {
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                }
-            })
-            .catch(error => {
-                console.error("Error accessing the camera: ", error);
-            });
+      }, 1000);
+    }
+   
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
     };
+   }, [snap.intro, doneDelay, maxSteps]);
+   
+   const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error("Error accessing the camera: ", error);
+    }
+   };
 
     // ฟังก์ชันหยุดกล้อง
     const stopCamera = () => {
@@ -136,7 +151,7 @@ export default function Selfie() {
     return (
         <>
             <AnimatePresence>
-                {snap.intro == 3 && (
+              {(snap.intro === 5 || window.location.pathname === '/booth/selfie') && (
                     <motion.div 
                         className="w-screen h-screen border-transparent border-2 flex flex-col lg:flex-row justify-center items-center relative select-none"
                         animate={{ backgroundColor: "#222222" }} 

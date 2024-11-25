@@ -1,6 +1,6 @@
 'use client'
 import { motion, AnimatePresence } from "framer-motion";
-import state from "../valtio_config";
+import state from "@/app/valtio_config";
 import { useSnapshot } from "valtio";
 import { IoIosArrowDropleft } from "react-icons/io";
 import { IoIosArrowDropright } from "react-icons/io";
@@ -8,88 +8,111 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { div } from "framer-motion/client";
 import { QRCode } from 'antd';
+import { useRouter } from "next/navigation";
 
 const getCurrentTime = () => {
-  const now = new Date();
-  return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+ const now = new Date();
+ return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 };
 
-export default function Save(){
+export default function Save() {
+ const router = useRouter();
+ const [isVisible, setIsVisible] = useState(false);
+ const [isTimeout, setIsTimeout] = useState(false);
+ const [currentTime, setCurrentTime] = useState(getCurrentTime());
+ const snap = useSnapshot(state);
 
-    const [isVisible, setIsVisible] = useState(false);
-    const [isTimeout, setIsTimeout] = useState(false); 
-    const [currentTime, setCurrentTime] = useState(getCurrentTime());
-    const snap = useSnapshot(state);
+ // เพิ่ม useEffect สำหรับตรวจสอบ URL
+ useEffect(() => {
+   if (window.location.pathname === '/booth/save') {
+     state.intro = 11;
+     localStorage.setItem('currentIntro', '11');
+   }
+ }, []);
 
-    useEffect(() => {
-      const timer = setInterval(() => {
-          setCurrentTime(getCurrentTime()); // อัปเดตเวลาทุกวินาที
-      }, 1000);
+ // เพิ่ม useEffect สำหรับจัดการการย้อนกลับ
+ useEffect(() => {
+   const handlePopState = () => {
+     const savedIntro = localStorage.getItem('currentIntro');
+     if (savedIntro) {
+       state.intro = parseInt(savedIntro);
+     }
+   };
 
-      return () => clearInterval(timer); // ล้าง interval เมื่อ component ถูก unmount
-  }, []);
+   window.addEventListener('popstate', handlePopState);
+   return () => window.removeEventListener('popstate', handlePopState);
+ }, []);
 
-  useEffect(() => {
-    let timer: ReturnType<typeof setInterval> | null = null;
-    // เมื่อ state.intro = 5 ให้เริ่มการนับถอยหลัง
-    if (snap.intro === 5) {
-        setIsVisible(true); 
-        timer = setInterval(() => {
-        }, 1000);
-    } else {
-        if (timer) clearInterval(timer); 
-    }
-    return () => {
-        if (timer) clearInterval(timer);
-    };
-}, [snap.intro]);
+ // อัพเดทเวลาทุกวินาที
+ useEffect(() => {
+   const timer = setInterval(() => {
+     setCurrentTime(getCurrentTime());
+   }, 1000);
+   return () => clearInterval(timer);
+ }, []);
 
-    const handleBack = () => {
-        state.resetSelfieData(); // เรียกฟังก์ชันรีเซ็ตสถานะ
-    
-        setIsVisible(false); 
+ useEffect(() => {
+   let timer: ReturnType<typeof setInterval> | null = null;
+   
+   if (snap.intro === 9) {
+     setIsVisible(true);
      
-        setIsTimeout(false); // ซ่อน Timeout หากมีการกดปุ่ม
-        setTimeout(() => {
-            state.intro = 5; // กลับไปที่หน้าก่อนหน้า
-            setIsVisible(true); 
-        }, 1200);
-      
-    
+     timer = setInterval(() => {
+       // ตั้งค่าการทำงานของ timer ถ้าจำเป็น
+     }, 1000);
+   } else {
+     if (timer) clearInterval(timer);
+   }
 
-    const exitAnimation = {
-        scale: [1, 1.2, 0],
-        opacity: [1, 0.5, 0],
-        transition: {
-          duration: 0.5,
-          ease: "easeInOut"
-        },
-      };
+   return () => {
+     if (timer) clearInterval(timer);
+   };
+ }, [snap.intro]);
 
-    };
-    useEffect(() => {
-        const timer = setTimeout(() => {
-          setIsVisible(true);
-        }, 1500);
-        return () => clearTimeout(timer);
-      }, []);
+ const handleBack = () => {
+   state.resetSelfieData();
+   setIsVisible(false);
+   setIsTimeout(false);
+   setTimeout(() => {
+     state.intro = 10;
+     localStorage.setItem('currentIntro', '10');
+     setIsVisible(true);
+     setTimeout(() => {
+       router.push('/booth/download');
+     }, 0);
+   }, 1000);
+ };
 
+ const exitAnimation = {
+   scale: [1, 1.2, 0],
+   opacity: [1, 0.5, 0],
+   transition: {
+     duration: 0.5,
+     ease: "easeInOut"
+   },
+ };
 
-    
-    const handleSavePhoto = () => {
-        if (snap.savedDropAreaImage) {
-            const link = document.createElement('a'); // สร้าง element ลิงก์
-            link.href = snap.savedDropAreaImage; // ตั้งค่า href เป็น URL ของภาพ
-            link.download = 'saved-photo.png'; // ตั้งชื่อไฟล์ที่ต้องการดาวน์โหลด
-            link.click(); // จำลองการคลิกเพื่อลดาวน์โหลด
-        } else {
-            console.log("No saved image available to download.");
-        }
-    };
+ useEffect(() => {
+   const timer = setTimeout(() => {
+     setIsVisible(true);
+   }, 1500);
+   return () => clearTimeout(timer);
+ }, []);
+
+ const handleSavePhoto = () => {
+   if (snap.savedDropAreaImage) {
+     const link = document.createElement('a');
+     link.href = snap.savedDropAreaImage;
+     link.download = 'saved-photo.png';
+     link.click();
+   } else {
+     console.log("No saved image available to download.");
+   }
+ };
     return(
         <>
             <AnimatePresence> 
-            {snap.intro == 6 &&  isVisible && (
+            {(snap.intro === 10 || window.location.pathname === '/booth/save') && (
                 <div className="w-[100%]  flex flex-col justify-between border-red-500 bg-[#F7F7F7] select-none">
                      <div className="flex justify-center items-center w-full px-10 md:hidden pt-4 border-b border-transparent">
                         
