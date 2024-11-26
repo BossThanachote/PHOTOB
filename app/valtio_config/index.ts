@@ -18,6 +18,8 @@ const state = proxy({
    intro: typeof window !== 'undefined' ? Number(localStorage.getItem('currentIntro')) || 1 : 1,
    color: "#EFBD48",
    editedImageUrl: '',
+   uploadedPhotoId: null as string | null,
+   uploadedPhotoUrl: null as string | null,
    selectedDiv: 1,
    quantity: 1,
    language: "EN", 

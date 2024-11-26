@@ -17,6 +17,7 @@ import { colors as mockColors } from "@/app/MockAPI/MockFrameColor";
 import { colorsBorder as mockColorsBorder } from "@/app/MockAPI/MockBorderColor";
 import { DropArea } from "@/app/pages_booth/DropArea";
 import { useRouter } from "next/navigation";
+import photoService from "@/app/services/photoService";
 
 
   const ItemTypes = {
@@ -132,24 +133,54 @@ export default function Custom() {
     const dropAreaElement = dropAreaRef.current;
     if (dropAreaElement) {
       dropAreaElement.style.filter = `brightness(${snap.filterColor})`;
-   
+     
       const canvas = await html2canvas(dropAreaElement);
       const imageURL = canvas.toDataURL("image/png");
-   
+     
       state.savedDropAreaImage = imageURL;
-      dropAreaElement.style.filter = '';
+  
+      try {
+        // อัปโหลดรูปภาพ
+        const result = await photoService.uploadPhoto({
+          machine_code: "F844597",
+          file: imageURL
+        });
+
+        console.log("Raw response:", result); // เช็คข้อมูลที่ได้จาก API
+
+        // ดึงข้อมูลจาก response โดยตรง
+        if (result && result.data) {
+          // เก็บข้อมูลเข้า state
+          state.uploadedPhotoId = result.data.id;
+          state.uploadedPhotoUrl = result.data.ImageUrl; // ใช้ตัวพิมพ์ใหญ่
+
+          // เก็บข้อมูลใน localStorage สำรอง
+          const photoData = {
+            id: result.data.id,
+            url: result.data.ImageUrl
+          };
+          localStorage.setItem('photoData', JSON.stringify(photoData));
+
+          console.log("Saved photo data:", photoData);
+        } else {
+          console.error("Invalid response format:", result);
+        }
+
+        dropAreaElement.style.filter = '';
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+      }
     }
     
+    // รอให้ state อัพเดทก่อน navigate
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     setIsVisible(false);
-    setTimeout(() => {
-      state.intro = 9;
-      localStorage.setItem('currentIntro', '8');
-      setIsVisible(true);
-      setTimeout(() => {
-        router.push('/booth/download'); // หรือหน้าที่ต้องการไป
-      }, 0);
-    }, 1000);
-   };
+    state.intro = 9;
+    localStorage.setItem('currentIntro', '8');
+    setIsVisible(true);
+    router.push('/booth/download');
+};
    
    const handleBack = () => {
     setIsVisible(false); 
