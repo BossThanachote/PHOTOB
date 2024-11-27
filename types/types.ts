@@ -135,11 +135,12 @@ export interface TransactionService {
 }
 
 // Transaction interfaces
+// แก้ไขส่วนที่เกี่ยวข้องกับ Transaction ใน types.ts
+
 export interface Transaction {
   id: string;
   name: string;
   ipAddress: string;
-  type: 'Event' | 'Department';
   status: StatusType;
   totalSale: number;
   date: string;
@@ -150,12 +151,13 @@ export interface Transaction {
 export interface TransactionUploadData {
   name: string;
   ipAddress: string;
-  type: 'Event' | 'Department';
   status: StatusType;
   totalSale: number;  
   frames: string[];
   stickers: string[];
 }
+
+// ส่วนอื่นๆยังคงเหมือนเดิม
 
 // Error Types
 export interface ApiError {

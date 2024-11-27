@@ -123,7 +123,7 @@ export default function SideBar() {
           router.push('/admin/dashboard/event')
           break
         case 'machine':
-          router.push('/admin/machine/event')
+          router.push('/admin/machine')
           break
         case 'photo':
           router.push('/admin/photo')

@@ -2,7 +2,7 @@
 
 import AuthGuard from "@/app/components/AuthGuard";
 import SideBar from "@/app/pages_admin/sidebar-form";
-import Machine from "@/app/pages_admin/machine-event-form";
+import Machine from "@/app/pages_admin/machine";
 
 export default function AdminMachine() {
   return (
