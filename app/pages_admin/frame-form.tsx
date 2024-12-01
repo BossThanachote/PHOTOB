@@ -33,6 +33,7 @@ const FrameManagement = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [entriesPerPage, setEntriesPerPage] = useState(10)
   const [totalItems, setTotalItems] = useState(0)
+  const [frameShots, setFrameShots] = useState<Record<string, number>>({});
 
   // Data State
   const [frames, setFrames] = useState<Frame[]>([])
@@ -58,32 +59,81 @@ const FrameManagement = () => {
     }
   }
 
-  // Fetch frames function
-  const fetchFrames = async () => {
-    try {
-      const response = await frameService.getFrames({
-        page: currentPage,
-        limit: entriesPerPage
-      })
-      
-      // Apply search filter if searchTerm exists
-      const filteredFrames = searchTerm
-        ? response.items.filter(
-            (frame) =>
-              frame.frameName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              frame.no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              frame.status?.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-        : response.items
+  // แก้ไขฟังก์ชัน getShotFromStorage
+const getShotFromStorage = (frameId: string): number => {
+  if (typeof window === 'undefined') return 3; // default to 3 if no window
+  const storedShot = localStorage.getItem(`frame_shot_${frameId}`);
+  const shotValue = storedShot ? parseInt(storedShot) : 3;
+  console.log('Getting shot from storage:', {
+    frameId,
+    storedShot,
+    shotValue
+  });
+  return shotValue;
+};
 
-      setFrames(filteredFrames)
-      setTotalItems(response.total)
-    } catch (err) {
-      console.error('Failed to load frames:', err)
-    } finally {
-      setIsLoading(false)
-    }
+// ในส่วนของ table cell
+  
+  const setShotToStorage = (frameId: string, shot: number): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(`frame_shot_${frameId}`, shot.toString());
+  };
+
+  // Fetch frames function
+ const fetchFrames = async () => {
+  try {
+    const response = await frameService.getFrames({
+      page: currentPage,
+      limit: entriesPerPage
+    });
+    
+    // Map frames with shot from localStorage
+    const framesWithStoredShot = response.items.map(frame => ({
+      ...frame,
+      shot: getShotFromStorage(frame.id) // ไม่ต้องใช้ || frame.shot แล้ว
+    }));
+    
+    
+    const filteredFrames = searchTerm
+      ? framesWithStoredShot.filter(
+          (frame) =>
+            frame.frameName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            frame.no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            frame.status?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : framesWithStoredShot;
+
+    setFrames(filteredFrames);
+    setTotalItems(response.total);
+  } catch (err) {
+    console.error('Failed to load frames:', err);
+  } finally {
+    setIsLoading(false);
   }
+};
+
+const handleShotChange = (frameId: string, shot: number) => {
+  setFrameShots(prev => ({
+    ...prev,
+    [frameId]: shot
+  }));
+};
+
+useEffect(() => {
+  // โหลดค่า shots จาก localStorage เมื่อ component mount
+  const loadStoredShots = () => {
+    const stored: Record<string, number> = {};
+    frames.forEach(frame => {
+      const storedShot = localStorage.getItem(`frame_shot_${frame.id}`);
+      if (storedShot) {
+        stored[frame.id] = parseInt(storedShot);
+      }
+    });
+    setFrameShots(stored);
+  };
+  
+  loadStoredShots();
+}, [frames]);
 
   // Initial fetch
   useEffect(() => {
@@ -134,23 +184,30 @@ const FrameManagement = () => {
   }
 
   // Upload handler
-  const handleUpload = async (frameData: any) => {
+  const handleUpload = async (uploadedFrames: Frame[]) => {
     try {
-      setIsActionLoading(true)
-      await frameService.createFrame({
-        frameName: `${frameData.shot} Cut`,
-        frame: frameData.frame,
-        status: frameData.status,
-        shot: frameData.shot
-      })
-      await fetchFrames()
-      setIsUploadModalOpen(false)
+      setIsActionLoading(true);
+      
+      // อัพเดท frameShots state และ localStorage
+      const newShots = { ...frameShots };
+      
+      uploadedFrames.forEach(frame => {
+        if (frame.id) {
+          newShots[frame.id] = frame.shot;
+          localStorage.setItem(`frame_shot_${frame.id}`, String(frame.shot));
+        }
+      });
+      
+      setFrameShots(newShots);
+      await fetchFrames();
+      setIsUploadModalOpen(false);
+      
     } catch (error) {
-      console.error('Failed to upload frame:', error)
+      console.error('Failed to upload frames:', error);
     } finally {
-      setIsActionLoading(false)
+      setIsActionLoading(false);
     }
-  }
+  };
 
   // Search handler with debounce
   const handleSearch = (value: string) => {
@@ -333,7 +390,7 @@ const FrameManagement = () => {
                       </td>
                       <td className="py-4">
                         <div className="bg-orange-50 text-orange-800 w-8 h-8 rounded-lg flex items-center justify-center">
-                          {frame.shot}
+                        {frameShots[frame.id] || 3}
                         </div>
                       </td>
                       <td className="py-4">{formatDate(frame.date)}</td>

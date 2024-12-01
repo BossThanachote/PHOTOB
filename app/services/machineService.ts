@@ -25,24 +25,60 @@ const checkAuthentication = () => {
   }
 };
 
-// API function to fetch machines
-const fetchMachines = async () => {
-  const response = await fetch(
-    `${BASE_URL}${API_PREFIX}/machines?page=1&limit=50`,
-    {
-      headers: getAuthHeaders()
-    }
-  );
-  const result = await handleApiResponse<{ status: string; message: string; data: any[] }>(response);
-  return result.data;
-};
-
 export const machineService = {
+  // Create new machine
+ // Create new machine
+createMachine: async (data: { 
+  name: string; 
+  status: string;
+}) => {
+  try {
+    checkAuthentication();
+    const response = await fetch(
+      `${BASE_URL}${API_PREFIX}/machine`,
+      {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: data.name,
+          status: data.status.toLowerCase()
+        })
+      }
+    );
+    
+    // ตรวจสอบและดึงข้อมูลจาก response
+    const result = await handleApiResponse<{
+      status: string;
+      data: {
+        id: string;
+        code: string;
+        name: string;
+        status: StatusType;
+      };
+    }>(response);
+
+    return result;
+  } catch (error) {
+    console.error('Error creating machine:', error);
+    throw error;
+  }
+},
+
   // Get all machines
   getTransactions: async () => {
     try {
       checkAuthentication();
-      return await fetchMachines();
+      const response = await fetch(
+        `${BASE_URL}${API_PREFIX}/machines?page=1&limit=50`,
+        {
+          headers: getAuthHeaders()
+        }
+      );
+      const result = await handleApiResponse<{ status: string; message: string; data: any[] }>(response);
+      return result.data;
     } catch (error) {
       console.error('Error fetching machines:', error);
       throw error;
@@ -67,8 +103,11 @@ export const machineService = {
     }
   },
 
-  // Update machine status
-  updateTransactionStatus: async (id: string, status: StatusType) => {
+  // Update machine
+  updateMachine: async (id: string, data: { 
+    name: string; 
+    status: string;
+  }) => {
     try {
       checkAuthentication();
       const response = await fetch(
@@ -79,15 +118,60 @@ export const machineService = {
             ...getAuthHeaders(),
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ status: status.toLowerCase() })
+          body: JSON.stringify({
+            name: data.name,
+            status: data.status.toLowerCase()
+          })
         }
       );
-      await handleApiResponse(response);
-      
-      // Refresh the list after update
-      return await fetchMachines();
+      const result = await handleApiResponse(response);
+      return result;
     } catch (error) {
-      console.error('Error updating machine status:', error);
+      console.error('Error updating machine:', error);
+      throw error;
+    }
+  },
+
+  // Update frame list for machine
+  updateMachineFrames: async (id: string, frames: any[]) => {
+    try {
+      checkAuthentication();
+      const response = await fetch(
+        `${BASE_URL}${API_PREFIX}/machine/${id}/frames`,
+        {
+          method: 'PUT',
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ frames })
+        }
+      );
+      return await handleApiResponse(response);
+    } catch (error) {
+      console.error('Error updating machine frames:', error);
+      throw error;
+    }
+  },
+
+  // Update sticker list for machine
+  updateMachineStickers: async (id: string, stickers: any[]) => {
+    try {
+      checkAuthentication();
+      const response = await fetch(
+        `${BASE_URL}${API_PREFIX}/machine/${id}/stickers`,
+        {
+          method: 'PUT',
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ stickers })
+        }
+      );
+      return await handleApiResponse(response);
+    } catch (error) {
+      console.error('Error updating machine stickers:', error);
       throw error;
     }
   },
@@ -122,14 +206,12 @@ export const machineService = {
         }
       );
       await handleApiResponse(response);
-      
-      // Refresh the list after deletion
-      return await fetchMachines();
+      return null;
     } catch (error) {
       console.error('Error deleting machine:', error);
       throw error;
     }
-  },
+  }
 };
 
 export default machineService;

@@ -55,13 +55,27 @@ export default function Machine() {
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [newMachineId, setNewMachineId] = useState<string>('');
+  
+  const getMachineNameFromStorage = (machineId: string): string | null => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(`machine_name_${machineId}`);
+  };
 
   // Fetch machines function
   const fetchMachines = async () => {
     try {
       setIsLoading(true);
       const data = await machineService.getTransactions();
-      setMachines(data);
+      
+      // แมปข้อมูลเพื่อใช้ชื่อจาก localStorage ถ้ามี
+      const updatedData = data.map(machine => ({
+        ...machine,
+        name: getMachineNameFromStorage(machine.id) || machine.name
+      }));
+      
+      setMachines(updatedData);
       setTotalItems(data.length);
       setError(null);
     } catch (err) {
@@ -78,7 +92,14 @@ export default function Machine() {
       try {
         setIsLoading(true);
         const results = await machineService.searchTransactions(searchTerm);
-        setMachines(results);
+        
+        // แมปข้อมูลเพื่อใช้ชื่อจาก localStorage ถ้ามี
+        const updatedResults = results.map(machine => ({
+          ...machine,
+          name: getMachineNameFromStorage(machine.id) || machine.name
+        }));
+        
+        setMachines(updatedResults);
         setTotalItems(results.length);
         setError(null);
       } catch (err) {
@@ -114,8 +135,11 @@ export default function Machine() {
       
       setOpenDropdownId(null);
       
-      // API call in background
-      await machineService.updateTransactionStatus(machineId, newStatus);
+      // API call using updateMachine instead
+      await machineService.updateMachine(machineId, {
+        name: machines.find(m => m.id === machineId)?.name || '',
+        status: newStatus
+      });
     } catch (error) {
       console.error('Failed to update status:', error);
       // Refresh data on error
@@ -209,16 +233,54 @@ export default function Machine() {
           >
             Retry
           </button>
+       
         </div>
       </div>
     );
   }
 
+  const handleAddMachine = async () => {
+    try {
+      setIsActionLoading(true);
+      
+      const result = await machineService.createMachine({
+        name: "New Machine",
+        status: "active"
+      });
+  
+      // หลังจากสร้าง machine ใหม่ ให้ดึงข้อมูลทั้งหมดมาใหม่
+      const machines = await machineService.getTransactions();
+      
+      // เอา machine ตัวล่าสุด (สมมติว่าตัวที่เพิ่งสร้างจะอยู่ลำดับสุดท้าย)
+      const latestMachine = machines[machines.length - 1];
+      
+      if (latestMachine?.id) {
+        setNewMachineId(latestMachine.id);
+        setShowSuccessModal(true);
+      }
+      
+    } catch (error) {
+      console.error('Error creating machine:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create machine');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowSuccessModal(false);
+    fetchMachines();
+  };
+  
+  const handleEditNewMachine = () => {
+    router.push(`/admin/machine/edit/${newMachineId}`);
+  };
+ 
   return (
     <div className="min-h-screen bg-[#F7F7F7] select-none">
       {/* Header */}
       <div className="h-auto min-h-[4rem] bg-white flex flex-col md:flex-row justify-between items-start md:items-center p-4 md:px-6 shadow-sm gap-4">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex `flex-wrap items-center gap-2">
           <h1 className="text-xl font-medium">Management</h1>
           <span className="text-[#61616A]">|</span>
           <span className="text-[#61616A]">Management</span>
@@ -226,7 +288,7 @@ export default function Machine() {
           <span className="text-[#8E8E93]">Machine Management</span>
         </div>
         <button 
-          onClick={() => router.push('/admin/machine/addmachine')}
+          onClick={handleAddMachine}
           type="button"
           className="bg-[#4F46E5] text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium justify-center hover:bg-[#4338CA] transition-colors disabled:opacity-50"
           disabled={isActionLoading}
@@ -297,38 +359,38 @@ export default function Machine() {
                       <td className="py-4">{machine.name}</td>
                       <td className="py-4 relative">
                       <button
-  type="button"
-  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 min-w-[120px]"
-  onClick={() => toggleDropdown(machine.id)}
-  disabled={isActionLoading}
->
-  <div className={`w-2 h-2 rounded-full ${getStatusColor(machine.status)}`} />
-  <span>{machine.status}</span>
-  {openDropdownId === machine.id ? (
-    <ChevronUp size={16} className="text-gray-400" />
-  ) : (
-    <ChevronDown size={16} className="text-gray-400" />
-  )}
-</button>
+                        type="button"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 min-w-[120px]"
+                        onClick={() => toggleDropdown(machine.id)}
+                        disabled={isActionLoading}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${getStatusColor(machine.status)}`} />
+                        <span>{machine.status}</span>
+                        {openDropdownId === machine.id ? (
+                          <ChevronUp size={16} className="text-gray-400" />
+                        ) : (
+                          <ChevronDown size={16} className="text-gray-400" />
+                        )}
+                      </button>
 
-{openDropdownId === machine.id && (
-  <div className="absolute z-10 mt-1 w-[120px] bg-white border rounded-md shadow-lg">
-    {(['Active', 'Inactive', 'Declined'] as StatusType[])
-      .filter((s) => s !== machine.status)
-      .map((status) => (
-        <button
-          key={status}
-          type="button"
-          className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-50 disabled:opacity-50"
-          onClick={() => handleStatusChange(machine.id, status)}
-          disabled={isActionLoading}
-        >
-          <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />
-          {status}
-        </button>
-      ))}
-  </div>
-)}
+                      {openDropdownId === machine.id && (
+                        <div className="absolute z-10 mt-1 w-[120px] bg-white border rounded-md shadow-lg">
+                          {(['Active', 'Inactive', 'Declined'] as StatusType[])
+                            .filter((s) => s !== machine.status)
+                            .map((status) => (
+                              <button
+                                key={status}
+                                type="button"
+                                className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-50 disabled:opacity-50"
+                                onClick={() => handleStatusChange(machine.id, status)}
+                                disabled={isActionLoading}
+                              >
+                                <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />
+                                {status}
+                              </button>
+                            ))}
+                        </div>
+                      )}
                       </td>
                       <td className="py-4">
                         <button 
@@ -451,6 +513,7 @@ export default function Machine() {
           </div>
         </div>
       </div>
+      
 
       {/* Loading Overlay */}
       {isActionLoading && (
@@ -461,6 +524,48 @@ export default function Machine() {
           </div>
         </div>
       )}
+      {showSuccessModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+      <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <p className="text-green-600 font-medium">
+          Machine created successfully!
+        </p>
+      </div>
+      
+      <p className="text-gray-600 mb-6">
+        Your new machine (ID: {newMachineId}) has been created. Would you like to edit its details now?
+      </p>
+
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={handleEditNewMachine}
+          disabled={isActionLoading}
+          className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+        >
+          {isActionLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              Edit the machine
+              <ChevronRight size={16} />
+            </>
+          )}
+        </button>
+        
+        <button
+          onClick={handleCloseModal}
+          disabled={isActionLoading}
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+        >
+          Close
+        </button>
+      </div>
     </div>
+  </div>
+      )}
+    </div>
+
+    
   );
 }

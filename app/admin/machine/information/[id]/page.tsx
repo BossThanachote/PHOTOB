@@ -12,20 +12,37 @@ interface MachineInfo {
   name: string
   code: string
   status: StatusType
-  frames: Array<{ id: string; image: string }>
-  stickers: Array<{ id: string; image: string }>
+  frames?: Array<{ id: string; image?: string; frame?: string; frameName?: string }>
+  stickers?: Array<{ id: string; image?: string; sticker?: string; stickerName?: string }>
 }
+
+// Helper functions for localStorage
+const getMachineNameFromStorage = (machineId: string): string | null => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(`machine_name_${machineId}`);
+};
+
+const getMachineFramesFromStorage = (machineId: string): any[] => {
+  if (typeof window === 'undefined') return [];
+  const storedFrames = localStorage.getItem(`machine_frames_${machineId}`);
+  return storedFrames ? JSON.parse(storedFrames) : [];
+};
+
+const getMachineStickersFromStorage = (machineId: string): any[] => {
+  if (typeof window === 'undefined') return [];
+  const storedStickers = localStorage.getItem(`machine_stickers_${machineId}`);
+  return storedStickers ? JSON.parse(storedStickers) : [];
+};
 
 export default function MachineInformation() {
   const router = useRouter()
   const params = useParams()
   const machineId = decodeURIComponent(params.id as string)
   
-  // States
   const [machineInfo, setMachineInfo] = useState<MachineInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Helper function for status colors
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
@@ -39,34 +56,34 @@ export default function MachineInformation() {
     }
   }
 
-  // Fetch machine data
   useEffect(() => {
     const fetchMachineData = async () => {
       try {
         setIsLoading(true)
-        console.log('Fetching machine with ID:', machineId)
+        setError(null)
           
-        const data = await machineService.getTransactionById(machineId)
-        console.log('Found machine:', data)
+        const response = await machineService.getTransactions()
+        const targetMachine = response.find(machine => machine.id === machineId)
   
-        if (data) {
+        if (targetMachine) {
+          // Get data from localStorage
+          const storedName = getMachineNameFromStorage(machineId)
+          const storedFrames = getMachineFramesFromStorage(machineId)
+          const storedStickers = getMachineStickersFromStorage(machineId)
+
+          // Create updated machine info
           setMachineInfo({
-            id: data.id,
-            name: data.name || '',
-            code: data.code,
-            status: data.status,
-            frames: [
-              { id: '1', image: '/api/placeholder/160/220' },
-              { id: '2', image: '/api/placeholder/160/220' }
-            ],
-            stickers: [
-              { id: '1', image: '/api/placeholder/80/80' },
-              { id: '2', image: '/api/placeholder/80/80' }
-            ]
+            ...targetMachine,
+            name: storedName || targetMachine.name,
+            frames: storedFrames.length > 0 ? storedFrames : targetMachine.frames || [],
+            stickers: storedStickers.length > 0 ? storedStickers : targetMachine.stickers || []
           })
+        } else {
+          setError('Machine not found')
         }
       } catch (err) {
         console.error('Error fetching machine:', err)
+        setError(err instanceof Error ? err.message : 'Failed to fetch machine data')
       } finally {
         setIsLoading(false)
       }
@@ -84,6 +101,24 @@ export default function MachineInformation() {
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
             <p className="text-gray-500">Loading machine information...</p>
+          </div>
+        </div>
+      </AuthGuard>
+    )
+  }
+
+  if (error) {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen bg-[#F7F7F7] flex justify-center items-center">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error}</p>
+            <button
+              onClick={() => router.back()}
+              className="text-blue-600 hover:underline"
+            >
+              Go Back
+            </button>
           </div>
         </div>
       </AuthGuard>
@@ -160,68 +195,62 @@ export default function MachineInformation() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Photo */}
-                  <div>
-                    <label className="block font-medium mb-2">Photo</label>
-                    <button className="text-blue-600 hover:underline">View</button>
-                  </div>
                 </div>
               </div>
 
               {/* Frame Section */}
               <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
                 <div className="mb-6">
-                  <h2 className="text-xl font-medium mb-2">Add Frame</h2>
+                  <h2 className="text-xl font-medium mb-2">Frames</h2>
                   <p className="text-gray-600">
-                    View and manage frames for this machine.
+                    View frames for this machine.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
-                  {machineInfo?.frames.map(frame => (
-                    <div key={frame.id} className="relative group">
-                      <img 
-                        src={frame.image}
-                        alt={`Frame ${frame.id}`}
-                        className="w-full aspect-[3/4] object-cover rounded-lg"
-                      />
-                      <button className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full hidden group-hover:flex items-center justify-center">
-                        ×
-                      </button>
+                  {machineInfo?.frames && machineInfo.frames.length > 0 ? (
+                    machineInfo.frames.map(frame => (
+                      <div key={frame.id} className="relative">
+                        <img 
+                          src={frame.frame || frame.image}
+                          alt={frame.frameName || `Frame ${frame.id}`}
+                          className="w-full aspect-[3/4] object-cover rounded-lg"
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-3 text-center py-8 text-gray-500">
+                      No frames available
                     </div>
-                  ))}
-                  <button className="w-full aspect-[3/4] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-                    <span className="text-4xl text-gray-400">+</span>
-                  </button>
+                  )}
                 </div>
               </div>
 
               {/* Sticker Section */}
               <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
                 <div className="mb-6">
-                  <h2 className="text-xl font-medium mb-2">Add Sticker</h2>
+                  <h2 className="text-xl font-medium mb-2">Stickers</h2>
                   <p className="text-gray-600">
-                    View and manage stickers for this machine.
+                    View stickers for this machine.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-5 gap-4">
-                  {machineInfo?.stickers.map(sticker => (
-                    <div key={sticker.id} className="relative group">
-                      <img 
-                        src={sticker.image}
-                        alt={`Sticker ${sticker.id}`}
-                        className="w-full aspect-square object-cover rounded-lg"
-                      />
-                      <button className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full hidden group-hover:flex items-center justify-center">
-                        ×
-                      </button>
+                  {machineInfo?.stickers && machineInfo.stickers.length > 0 ? (
+                    machineInfo.stickers.map(sticker => (
+                      <div key={sticker.id} className="relative">
+                        <img 
+                          src={sticker.sticker || sticker.image}
+                          alt={sticker.stickerName || `Sticker ${sticker.id}`}
+                          className="w-full aspect-square object-cover rounded-lg"
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-5 text-center py-8 text-gray-500">
+                      No stickers available
                     </div>
-                  ))}
-                  <button className="w-full aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-                    <span className="text-4xl text-gray-400">+</span>
-                  </button>
+                  )}
                 </div>
               </div>
             </div>

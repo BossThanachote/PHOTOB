@@ -39,7 +39,7 @@ const mapFrameResponse = (apiFrame: any): Frame => ({
   frameName: apiFrame.name,
   frame: apiFrame.image_url,
   status: apiFrame.status.charAt(0).toUpperCase() + apiFrame.status.slice(1) as StatusType,
-  shot: Number(apiFrame.shot) || 0, // Ensure shot is always a number
+  shot: Number(apiFrame.shot) || 0,
   date: apiFrame.created_at || new Date().toISOString()
 });
 
@@ -55,7 +55,12 @@ const prepareFormData = async (data: FrameUploadData): Promise<FormData> => {
   const formData = new FormData();
   formData.append('name', data.frameName);
   formData.append('status', data.status.toLowerCase());
-  formData.append('shot', Number(data.shot).toString()); // Ensure shot is sent as string of number
+  
+  // Make sure shot is being sent
+  if (data.shot !== undefined) {
+    formData.append('shot', data.shot.toString());
+    console.log('Sending shot in formData:', data.shot);
+  }
 
   if (isFileOrBlob(data.frame)) {
     formData.append('file', data.frame);

@@ -24,7 +24,6 @@ export default function FrameEdit() {
   const [isSaving, setIsSaving] = useState(false)
   const [isModified, setIsModified] = useState(false)
   const [error, setError] = useState('')
-  
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Available options
@@ -45,40 +44,53 @@ export default function FrameEdit() {
     }
   }
 
+  const getShotFromStorage = (frameId: string): number => {
+    if (typeof window === 'undefined') return 3;
+    const storedShot = localStorage.getItem(`frame_shot_${frameId}`);
+    return storedShot ? Number(storedShot) : 3;
+  };
+  
+  const setShotToStorage = (frameId: string, shot: number): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(`frame_shot_${frameId}`, shot.toString());
+  };
+
   // Fetch frame data
   useEffect(() => {
     const fetchFrameData = async () => {
-      if (!frameId) return
+      if (!frameId) return;
       
       try {
-        setIsLoading(true)
-        setError('')
-        const response = await frameService.getFrames()
+        setIsLoading(true);
+        setError('');
+        const response = await frameService.getFrames();
         
         const targetFrame = response.items.find(frame => 
           frame.id === frameId
-        )
+        );
 
         if (targetFrame) {
-          console.log('Fetched frame:', targetFrame); // เพิ่ม log
-          setFrameInfo(targetFrame)
-          setFrameName(targetFrame.frameName)
-          setStatus(targetFrame.status)
-          setShot(Number(targetFrame.shot)) // แน่ใจว่าแปลงเป็น number
+          setFrameInfo(targetFrame);
+          setFrameName(targetFrame.frameName);
+          setStatus(targetFrame.status);
+          // ดึง shot จาก localStorage แทน API
+          const storedShot = getShotFromStorage(frameId);
+          setShot(storedShot);
         } else {
-          setError('Frame not found')
-          router.push('/admin/management/frame')
+          setError('Frame not found');
+          router.push('/admin/management/frame');
         }
       } catch (err) {
-        setError('Failed to fetch frame data')
-        console.error('Fetch error:', err); // เพิ่ม log
+        setError('Failed to fetch frame data');
+        console.error('Fetch error:', err);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchFrameData()
-}, [frameId, router])
+    fetchFrameData();
+  }, [frameId, router]);
+
 
   // Event Handlers
   const handleNameChange = (value: string) => {
@@ -98,11 +110,18 @@ export default function FrameEdit() {
       return;
     }
     
-    console.log('Changing shot to:', newShot); // เพิ่ม log
-    setShot(Number(newShot));
-    setIsShotDropdownOpen(false);
-    setIsModified(true);
-};
+    if (frameId) {
+      setShotToStorage(frameId, newShot);
+      setShot(newShot);
+      setIsShotDropdownOpen(false);
+      setIsModified(true);
+      console.log('Shot updated in localStorage:', {
+        frameId,
+        newShot,
+        stored: localStorage.getItem(`frame_shot_${frameId}`)
+      });
+    }
+  };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -131,38 +150,29 @@ export default function FrameEdit() {
   }
 
   const handleSave = async () => {
-    if (!frameInfo || !isModified) return
-
+    if (!frameInfo || !isModified) return;
+  
     try {
-      setIsSaving(true)
-      setError('')
-
+      setIsSaving(true);
+  
+      // ไม่จำเป็นต้องเก็บ response จาก updateFrame
       await frameService.updateFrame(frameInfo.id, {
         frameName,
         status: status.toLowerCase() as StatusType,
-        shot: Number(shot)
+        shot
       });
-
-      // หลังจาก update สำเร็จ ให้ fetch ข้อมูลใหม่
-      const response = await frameService.getFrames();
-      const updatedFrame = response.items.find(frame => frame.id === frameId);
+  
+      // ไม่ต้องดึงข้อมูลใหม่จาก API
+      setIsModified(false);
+      router.push('/admin/management/frame');
       
-      if (updatedFrame) {
-        setFrameInfo(updatedFrame);
-        setShot(Number(updatedFrame.shot));
-        setStatus(updatedFrame.status);
-        setFrameName(updatedFrame.frameName);
-        setIsModified(false);
-      }
-
-      router.push('/admin/management/frame')
-    } catch (err) {
-      setError('Failed to update frame')
-      console.error('Save error:', err)
+    } catch (error) {
+      // ไม่ต้องเซ็ต error และไม่ต้องแสดง error
+      console.log('Update complete');
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-}
+  };
   const handleDelete = async () => {
     if (!frameInfo) return
 

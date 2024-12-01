@@ -26,6 +26,17 @@ export default function Selfie() {
           state.intro = 6; 
       }, 1200); 
   };
+  
+  useEffect(() => {
+    if (snap.intro === 5) {
+        // เริ่มการนับถอยหลังเมื่อ intro เป็น 3
+        setCountdown(12); // รีเซ็ต countdown
+        setCurrentStep(1); // รีเซ็ต currentStep
+        setDoneDelay(false); // รีเซ็ต doneDelay
+        startCamera(); // เริ่มต้นกล้อง
+    }
+}, [snap.intro]);
+
 
   useEffect(() => {
     if (window.location.pathname === '/booth/selfie') {

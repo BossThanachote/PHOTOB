@@ -28,6 +28,9 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload, isLoading 
   const [isUploading, setIsUploading] = useState(false);
   const [showProcessing, setShowProcessing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [newFrameId, setNewFrameId] = useState<string>('');
+  
 
   useEffect(() => {
     if (!isOpen) {
@@ -58,6 +61,17 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload, isLoading 
       resetModal();
       onClose();
     }
+  };
+
+  const setShotToStorage = (frameId: string, shot: number): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(`frame_shot_${frameId}`, shot.toString());
+  };
+  
+  const getShotFromStorage = (frameId: string): number => {
+    if (typeof window === 'undefined') return 3;
+    const storedShot = localStorage.getItem(`frame_shot_${frameId}`);
+    return storedShot ? Number(storedShot) : 3;
   };
 
   const validateFile = (file: File): boolean => {
@@ -144,7 +158,7 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload, isLoading 
 
   const handleSubmit = async () => {
     if (isUploading || isLoading || uploadedFiles.length === 0) return;
-
+  
     setIsUploading(true);
     
     try {
@@ -158,7 +172,13 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload, isLoading 
             frame: file.file,
             shot: file.shot
           });
-
+  
+          // เก็บ ID ของ frame แรกที่อัพโหลด
+          if (index === 0 && result.id) {
+            setNewFrameId(result.id);
+            setShotToStorage(result.id, file.shot);
+          }
+  
           updateFileProgress(index, 100);
           return result;
         } catch (error) {
@@ -167,15 +187,18 @@ export default function UploadFrameModal({ isOpen, onClose, onUpload, isLoading 
           return null;
         }
       });
-
-      // เมื่อ progress bar เต็มหมดทุกไฟล์แล้ว จึงแสดง Processing
+  
       const results = (await Promise.all(uploadPromises)).filter((result): result is Frame => result !== null);
       setShowProcessing(true);
       await onUpload(results);
+  
+      // แสดง Modal หลังอัพโหลดสำเร็จ
+      setShowSuccessModal(true);
       
     } catch (error) {
-      console.error('Upload process warning:', error);
+      console.error('Upload process error:', error);
       setShowProcessing(false);
+    } finally {
       setIsUploading(false);
     }
   };
