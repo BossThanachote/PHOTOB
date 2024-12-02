@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { Modal, Button } from 'antd'; 
 import 'antd/dist/reset.css'; 
 import { useRouter } from "next/navigation";
+import { useParams } from 'next/navigation'; // เพิ่ม useParams
 
 export default function Payment() {
   const router = useRouter();
@@ -16,14 +17,20 @@ export default function Payment() {
   const snap = useSnapshot(state);
   const [selectedDiv, setSelectedDiv] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const params = useParams();
+  const machineId = params.machineId as string;
 
   // เพิ่ม useEffect สำหรับการตั้งค่าเริ่มต้น
   useEffect(() => {
-    if (window.location.pathname === '/booth/payment') {
+    console.log('Machine ID:', machineId);
+    console.log('Current intro state:', snap.intro);
+    
+    if (machineId) {
       state.intro = 3;
       localStorage.setItem('currentIntro', '3');
+      console.log('Set intro to 3');
     }
-  }, []);
+  }, [machineId]);
  
   // เพิ่ม useEffect สำหรับจัดการการย้อนกลับของเบราว์เซอร์
   useEffect(() => {
@@ -52,50 +59,66 @@ export default function Payment() {
   };
 
   const handleNext = () => {
-    if (selectedDiv === null) {       
-        setShowModal(true);
+    const storedMachineId = localStorage.getItem('selectedMachineId');
+  
+    if (!storedMachineId) {
+      console.error("No machine ID found");
+      router.push('/dashboard');
+      return;
+    }
+  
+    if (selectedDiv === null) {
+      setShowModal(true);
     } else {
-        setIsVisible(false);
-        setTimeout(() => {
-          switch (selectedDiv) {
-            case 'THAIQR':
-              state.intro = 11;
-              localStorage.setItem('currentIntro', '11');
-              setTimeout(() => {
-                router.push('/booth/thaiqr');
-              }, 10);
-              break;
-            case 'ALIPAY':
-              state.intro = 12;
-              localStorage.setItem('currentIntro', '12');
-              setTimeout(() => {
-                router.push('/booth/alipay');
-              }, 10);
-              break;
-            case 'COUPON':
-              state.intro = 13;
-              localStorage.setItem('currentIntro', '13');
-              setTimeout(() => {
-                router.push('/booth/coupon');
-              }, 10);
-              break;
-            default:
-              break;
-          }
-          setIsVisible(true);
-        }, 1000);
+      setIsVisible(false);
+      setTimeout(() => {
+        switch (selectedDiv) {
+          case 'THAIQR':
+            state.intro = 11;
+            localStorage.setItem('currentIntro', '11');
+            setTimeout(() => {
+              router.push(`/booth/thaiqr/${storedMachineId}`);
+            }, 10);
+            break;
+          case 'ALIPAY':
+            state.intro = 12;
+            localStorage.setItem('currentIntro', '12');
+            setTimeout(() => {
+              router.push(`/booth/alipay/${storedMachineId}`);
+            }, 10);
+            break;
+          case 'COUPON':
+            state.intro = 13;
+            localStorage.setItem('currentIntro', '13');
+            setTimeout(() => {
+              router.push(`/booth/coupon/${storedMachineId}`);
+            }, 10);
+            break;
+          default:
+            break;
+        }
+        setIsVisible(true);
+      }, 1000);
     }
   };
-
+  
   const handleBack = () => {
+    const storedMachineId = localStorage.getItem('selectedMachineId');
+  
+    if (!storedMachineId) {
+      console.error("No machine ID found");
+      router.push('/dashboard');
+      return;
+    }
+  
     setSelectedDiv(null);
-    setIsVisible(false); 
+    setIsVisible(false);
     setTimeout(() => {
       state.intro = 2;
       localStorage.setItem('currentIntro', '2');
-      setIsVisible(true); 
+      setIsVisible(true);
       setTimeout(() => {
-        router.push('/booth/format');
+        router.push(`/booth/format/${storedMachineId}`);
       }, 0);
     }, 1000);
   };

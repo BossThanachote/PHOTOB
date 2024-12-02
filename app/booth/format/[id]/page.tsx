@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { Modal, Button } from 'antd'; 
 import 'antd/dist/reset.css'; 
 import { useRouter } from "next/navigation";
+import { useParams } from 'next/navigation'; // เพิ่ม useParams
 
 export default function Format() {
  const router = useRouter();
@@ -26,14 +27,22 @@ export default function Format() {
  const [isHoveredDiv4, setIsHoveredDiv4] = useState(false);
  const [isTappedDiv4, setIsTappedDiv4] = useState(false);
  const [showModal, setShowModal] = useState(false);
+ const params = useParams();
+ const machineId = params.machineId as string;
+ 
 
  // เพิ่ม useEffect สำหรับการตั้งค่าเริ่มต้น
  useEffect(() => {
-   if (window.location.pathname === '/booth/format') {
-     state.intro = 2;
-     localStorage.setItem('currentIntro', '2');
-   }
- }, []);
+  console.log('Machine ID:', machineId);
+  console.log('Current intro state:', snap.intro);
+  
+  if (machineId) {
+    state.intro = 2;
+    localStorage.setItem('currentIntro', '2');
+    console.log('Set intro to 2');
+  }
+}, [machineId]);
+ 
 
  // เพิ่ม useEffect สำหรับจัดการการย้อนกลับของเบราว์เซอร์
  useEffect(() => {
@@ -60,34 +69,50 @@ export default function Format() {
  };
 
  const handleNext = () => {
-   if (selectedDiv === null) {       
-       setShowModal(true);
-   } else {       
-       setSelectedDiv(null);
-       setIsVisible(false); 
-       setTimeout(() => {
-           state.intro = 3; 
-           localStorage.setItem('currentIntro', '3');
-           setIsVisible(true); 
-           setTimeout(() => {
-             router.push('/booth/payment');
-           }, 0);
-         }, 1000);
-       }
- };
+  const storedMachineId = localStorage.getItem('selectedMachineId');
 
- const handleBack = () => {
-   setSelectedDiv(null);
-   setIsVisible(false); 
-   setTimeout(() => {
-     state.intro = 1; 
-     localStorage.setItem('currentIntro', '1');
-     setIsVisible(true); 
-     setTimeout(() => {
-       router.push('/booth');
-     }, 0);
-   }, 1000);
- };
+  if (!storedMachineId) {
+    console.error("No machine ID found");
+    router.push('/dashboard');
+    return;
+  }
+
+  if (selectedDiv === null) {       
+    setShowModal(true);
+  } else {       
+    setSelectedDiv(null);
+    setIsVisible(false); 
+    setTimeout(() => {
+      state.intro = 3; 
+      localStorage.setItem('currentIntro', '3');
+      setIsVisible(true); 
+      setTimeout(() => {
+        router.push(`/booth/payment/${storedMachineId}`);
+      }, 0);
+    }, 1000);
+  }
+};
+
+const handleBack = () => {
+  const storedMachineId = localStorage.getItem('selectedMachineId');
+
+  if (!storedMachineId) {
+    console.error("No machine ID found");
+    router.push('/dashboard');
+    return;
+  }
+
+  setSelectedDiv(null);
+  setIsVisible(false); 
+  setTimeout(() => {
+    state.intro = 1; 
+    localStorage.setItem('currentIntro', '1');
+    setIsVisible(true); 
+    setTimeout(() => {
+      router.push(`/booth/${storedMachineId}`);
+    }, 0);
+  }, 1000);
+};
 
  const handleDivClick = (divNumber: any) => {
    if (selectedDiv === divNumber) {
@@ -128,7 +153,7 @@ export default function Format() {
   return (
     <>
       <AnimatePresence> 
-      {(snap.intro === 2 || window.location.pathname === '/booth/format') && isVisible && (
+      {(snap.intro === 2 || window.location.pathname === `/booth/format/${machineId}`) && isVisible && (
           <div className="w-screen h-screen flex flex-col justify-between border-transparent ">
             {/* Navbar */}
             <div className="flex justify-center items-center w-full px-10 md:hidden py-5 border-b border-transparent">

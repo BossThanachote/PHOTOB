@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { QRCode } from 'antd';
 import { useRouter } from "next/navigation";
+import { useParams } from 'next/navigation'; // เพิ่ม useParams
 
 export default function Alipay(){
     const router = useRouter();
@@ -14,6 +15,8 @@ export default function Alipay(){
     const [isVisible, setIsVisible] = useState(true);
     const [isTimeout, setIsTimeout] = useState(false);
     const [selectedDiv, setSelectedDiv] = useState<string | null>(null); 
+    const params = useParams();
+    const machineId = params.machineId as string;
     
     const snap = useSnapshot(state);
 
@@ -28,11 +31,15 @@ export default function Alipay(){
     };
 
     useEffect(() => {
-      if (window.location.pathname === '/booth/alipay') {
+      console.log('Machine ID:', machineId);
+      console.log('Current intro state:', snap.intro);
+      
+      if (machineId) {
         state.intro = 12;
         localStorage.setItem('currentIntro', '12');
+        console.log('Set intro to 12');
       }
-     }, []);
+    }, [machineId]);
      
      // เพิ่ม useEffect สำหรับจัดการการย้อนกลับ
      useEffect(() => {
@@ -42,12 +49,12 @@ export default function Alipay(){
           state.intro = parseInt(savedIntro);
         }
       };
-     
+      
       window.addEventListener('popstate', handlePopState);
       return () => window.removeEventListener('popstate', handlePopState);
-     }, []);
-     
-     useEffect(() => {
+    }, []);
+    
+    useEffect(() => {
       let timer: any;
       
       if (snap.intro === 12) {
@@ -62,33 +69,49 @@ export default function Alipay(){
       }
       
       return () => clearInterval(timer);
-     }, [snap.intro]);
-     
-     useEffect(() => {
+    }, [snap.intro]);
+    
+    useEffect(() => {
+      const storedMachineId = localStorage.getItem('selectedMachineId');
+    
       if (countdown === 0) {
+        if (!storedMachineId) {
+          console.error("No machine ID found");
+          router.push('/dashboard');
+          return;
+        }
+    
         setIsTimeout(true);
         setTimeout(() => {
           setIsVisible(false);
           setTimeout(() => {
             state.intro = 3;
             localStorage.setItem('currentIntro', '3');
-            router.push('/booth/payment');
+            router.push(`/booth/payment/${storedMachineId}`);
           }, 0);
         }, 1000);
       }
-     }, [countdown]);
-     
-     const handleBack = () => {
+    }, [countdown]);
+    
+    const handleBack = () => {
+      const storedMachineId = localStorage.getItem('selectedMachineId');
+    
+      if (!storedMachineId) {
+        console.error("No machine ID found");
+        router.push('/dashboard');
+        return;
+      }
+    
       setIsVisible(false);
       setTimeout(() => {
         state.intro = 3;
         localStorage.setItem('currentIntro', '3');
         setIsVisible(true);
         setTimeout(() => {
-          router.push('/booth/payment');
+          router.push(`/booth/payment/${storedMachineId}`);
         }, 0);
       }, 1000);
-     };
+    };
 
 const exitAnimation = {
     scale: [1, 1.2, 0],

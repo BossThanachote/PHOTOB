@@ -7,13 +7,16 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { QRCode } from 'antd';
 import { useRouter } from "next/navigation";
+import { useParams } from 'next/navigation'; // เพิ่ม useParams
 
 export default function Thaiqr(){
     const router = useRouter();
     const [countdown, setCountdown] = useState(120);
     const [isVisible, setIsVisible] = useState(true);
     const [isTimeout, setIsTimeout] = useState(false);
-    const [selectedDiv, setSelectedDiv] = useState<string | null>(null); 
+    const [selectedDiv, setSelectedDiv] = useState<string | null>(null);
+    const params = useParams();
+    const machineId = params.machineId as string; 
     
     const snap = useSnapshot(state);
 
@@ -22,11 +25,15 @@ export default function Thaiqr(){
   };
 
   useEffect(() => {
-    if (window.location.pathname === '/booth/thaiqr') {
+    console.log('Machine ID:', machineId);
+    console.log('Current intro state:', snap.intro);
+    
+    if (machineId) {
       state.intro = 11;
       localStorage.setItem('currentIntro', '11');
+      console.log('Set intro to 11');
     }
-   }, []);
+  }, [machineId]);
    
    // เพิ่ม useEffect สำหรับจัดการการย้อนกลับ
    useEffect(() => {
@@ -57,39 +64,43 @@ export default function Thaiqr(){
    }, [snap.intro]);
    
    useEffect(() => {
+    const storedMachineId = localStorage.getItem('selectedMachineId');
+   
     if (countdown === 0) {
+      if (!storedMachineId) {
+        console.error("No machine ID found");
+        router.push('/dashboard');
+        return;
+      }
+   
       setIsTimeout(true);
       setTimeout(() => {
         setIsVisible(false);
         setTimeout(() => {
           state.intro = 3;
           localStorage.setItem('currentIntro', '3');
-          router.push('/booth/payment');
+          router.push(`/booth/payment/${storedMachineId}`);
         }, 0);
       }, 1000);
     }
    }, [countdown]);
    
-   const handleNext = () => {
-    setIsVisible(false);
-    setTimeout(() => {
-      state.intro = 12;
-      localStorage.setItem('currentIntro', '12');
-      setIsVisible(true);
-      setTimeout(() => {
-        router.push('/booth/alipay');
-      }, 0);
-    }, 1000);
-   };
-   
    const handleBack = () => {
+    const storedMachineId = localStorage.getItem('selectedMachineId');
+   
+    if (!storedMachineId) {
+      console.error("No machine ID found");
+      router.push('/dashboard');
+      return;
+    }
+   
     setIsVisible(false);
     setTimeout(() => {
       state.intro = 3;
       localStorage.setItem('currentIntro', '3');
       setIsVisible(true);
       setTimeout(() => {
-        router.push('/booth/payment');
+        router.push(`/booth/payment/${storedMachineId}`);
       }, 0);
     }, 1000);
    };

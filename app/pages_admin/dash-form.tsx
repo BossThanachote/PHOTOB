@@ -1,293 +1,143 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { MoreHorizontal, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from 'lucide-react'
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import machineService from '../services/machineService';
+import { Loader2, Search } from 'lucide-react';
+import { StatusType } from '@/types/types';
 
-type StatusType = 'Active' | 'Inactive' | 'Declined';
-
-interface Status {
-  value: StatusType;
-  color: string;
-}
-
-interface Transaction {
+interface MachineData {
   id: string;
+  code: string;
+  name: string;
   status: StatusType;
-  totalSale: number;
-  date: string;
 }
 
-const statusConfig: Record<StatusType, Status> = {
-  Active: {
-    value: 'Active',
-    color: 'bg-green-500',
-  },
-  Inactive: {
-    value: 'Inactive',
-    color: 'bg-orange-500',
-  },
-  Declined: {
-    value: 'Declined',
-    color: 'bg-red-500',
-  },
-};
+export default function MachineDashboard() {
+  const router = useRouter();
+  const [machines, setMachines] = useState<MachineData[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
 
-export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'Event' | 'Department'>('Event')
-  const [entriesPerPage, setEntriesPerPage] = useState(10)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
-
-  // Mock data
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: '001',
-      status: 'Active',
-      totalSale: 1002500,
-      date: '2023-04-05, 00:05PM',
-    },
-    {
-      id: '002',
-      status: 'Active',
-      totalSale: 1002500,
-      date: '2023-04-05, 00:05PM',
-    },
-  ])
-
-  // โหลดข้อมูลเมื่อ component mount
-  useEffect(() => {
-    try {
-      const currentProfile = localStorage.getItem('adminProfile');
-      if (currentProfile) {
-        const { email } = JSON.parse(currentProfile);
-        const savedTransactions = localStorage.getItem(`${email}_transactions`);
-        if (savedTransactions) {
-          setTransactions(JSON.parse(savedTransactions));
-        }
-      }
-    } catch (error) {
-      console.error('Error loading from localStorage:', error);
-    }
-  }, []);
-
-  const toggleDropdown = (id: string) => {
-    setOpenDropdownId(openDropdownId === id ? null : id);
-  }
-
-  const handleStatusChange = (transactionId: string, newStatus: StatusType) => {
-    setTransactions(prevTransactions => {
-      const updatedTransactions = prevTransactions.map(transaction => 
-        transaction.id === transactionId 
-          ? { ...transaction, status: newStatus }
-          : transaction
-      );
-      
-      // บันทึกลง localStorage
-      try {
-        const currentProfile = localStorage.getItem('adminProfile');
-        if (currentProfile) {
-          const { email } = JSON.parse(currentProfile);
-          localStorage.setItem(`${email}_transactions`, JSON.stringify(updatedTransactions));
-        }
-      } catch (error) {
-        console.error('Error saving to localStorage:', error);
-      }
-      
-      return updatedTransactions;
-    });
-    setOpenDropdownId(null);
+  const getMachineNameFromStorage = (machineId: string): string | null => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(`machine_name_${machineId}`);
   };
 
-  return (
-    <div className="min-h-screen bg-[#F7F7F7] select-none">
-      {/* Navbar */}
-      <div className="h-auto min-h-[4rem] bg-white flex flex-col md:flex-row justify-between items-start md:items-center p-4 md:px-6 shadow-sm gap-4">
-        <h1 className="text-xl font-medium font-ibm-thai-600">Dashboard</h1>
-        <button 
-          type="button"
-          className="bg-[#4F46E5] text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium w-full md:w-auto justify-center"
-        >
-          + ADD MACHINE
-        </button>
+  // Fetch machines and filter for active ones
+  const fetchMachines = async () => {
+    try {
+      setIsLoading(true);
+      const data = await machineService.getTransactions();
+      // Filter only active machines
+      const activeMachines = data
+        .filter(machine => machine.status.toLowerCase() === 'active')
+        .map(machine => ({
+          ...machine,
+          name: getMachineNameFromStorage(machine.id) || machine.name
+        }));
+      setMachines(activeMachines);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load machines:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load machines');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load selected machine from localStorage on mount
+  useEffect(() => {
+    // เปลี่ยนจาก selectedMachineCode เป็น selectedMachineId
+    const savedMachineId = localStorage.getItem('selectedMachineId');
+    if (savedMachineId) {
+      setSelectedMachine(savedMachineId);
+    }
+    fetchMachines();
+  }, []);
+
+  // Filter machines based on search term
+  const filteredMachines = machines.filter(machine =>
+    machine.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    machine.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelect = (machine: MachineData) => {
+    setSelectedMachine(machine.id);
+    // เก็บข้อมูลใน localStorage
+    localStorage.setItem('selectedMachineId', machine.id);
+    localStorage.setItem('selectedMachineCode', machine.code);
+    localStorage.setItem('selectedMachineName', machine.name);
+    
+  
+  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
       </div>
+    );
+  }
 
-      {/* Content Area */}
-      <div className="p-4 md:p-6">
-        <div className="bg-white rounded-lg shadow-sm">
-          {/* Tab and Filter Section */}
-          <div className="p-4 md:p-6 border-b">
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={`px-4 md:px-6 py-2 rounded-lg flex-1 md:flex-none text-center ${
-                  activeTab === 'Event'
-                    ? 'bg-pink-100 text-pink-600'
-                    : 'hover:bg-gray-50'
-                }`}
-                onClick={() => setActiveTab('Event')}
-              >
-                Event
-              </button>
-              <button
-                type="button"
-                className={`px-4 md:px-6 py-2 rounded-lg flex-1 md:flex-none text-center ${
-                  activeTab === 'Department'
-                    ? 'bg-pink-100 text-pink-600'
-                    : 'hover:bg-gray-50'
-                }`}
-                onClick={() => setActiveTab('Department')}
-              >
-                Department
-              </button>
-            </div>
-          </div>
-
-          {/* Table Controls */}
-          <div className="px-4 md:px-6 pt-6 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <span className="text-gray-500 whitespace-nowrap">Show</span>
-              <select
-                value={entriesPerPage}
-                onChange={(e) => setEntriesPerPage(Number(e.target.value))}
-                className="border rounded px-2 py-1 cursor-pointer w-20"
-                aria-label="Number of entries per page"
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-              <span className="text-gray-500">Entries</span>
-            </div>
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <span className="text-gray-500 whitespace-nowrap">Search:</span>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="border rounded px-3 py-1 w-full md:w-[240px]"
-                placeholder="Search..."
-              />
-            </div>
-          </div>
-
-          {/* Table Container */}
-          <div className="w-full h-[36.5rem] overflow-x-auto">
-            <div className="min-w-[800px]">
-              <div className="px-4 md:px-6">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="py-3 px-4 text-left font-medium">No.</th>
-                      <th className="py-3 px-4 text-left font-medium">Status</th>
-                      <th className="py-3 px-4 text-left font-medium">Total sale ฿</th>
-                      <th className="py-3 px-4 text-left font-medium">Date</th>
-                      <th className="py-3 px-4 text-left font-medium">Photo</th>
-                      <th className="py-3 px-4 text-left font-medium">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactions.map((transaction) => (
-                      <tr key={transaction.id} className="border-b">
-                        <td className="py-3 px-4">{transaction.id}</td>
-                        <td className="py-3 px-4 relative">
-                          <button
-                            type="button"
-                            className="flex items-center gap-2 min-w-[120px] px-3 py-1 rounded hover:bg-gray-50"
-                            onClick={() => toggleDropdown(transaction.id)}
-                            aria-label={`Change status of transaction ${transaction.id}`}
-                          >
-                            <div 
-                              className={`w-2 h-2 rounded-full ${statusConfig[transaction.status].color}`}
-                            />
-                            <span>{transaction.status}</span>
-                            {openDropdownId === transaction.id ? (
-                              <ChevronUp size={16} className="text-gray-400" />
-                            ) : (
-                              <ChevronDown size={16} className="text-gray-400" />
-                            )}
-                          </button>
-                          
-                          {/* Dropdown Menu */}
-                          {openDropdownId === transaction.id && (
-                            <div className="absolute left-0 mt-1 w-[120px] bg-white border rounded-md shadow-lg z-10">
-                              {Object.entries(statusConfig)
-                                .filter(([key]) => key !== transaction.status)
-                                .map(([key, status]) => (
-                                  <button
-                                    key={key}
-                                    type="button"
-                                    className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-50"
-                                    onClick={() => handleStatusChange(transaction.id, key as StatusType)}
-                                  >
-                                    <div className={`w-2 h-2 rounded-full ${status.color}`} />
-                                    {status.value}
-                                  </button>
-                                ))}
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-3 px-4">{transaction.totalSale.toLocaleString()}</td>
-                        <td className="py-3 px-4">{transaction.date}</td>
-                        <td className="py-3 px-4">
-                          <button 
-                            type="button" 
-                            className="text-blue-600 hover:underline"
-                          >
-                            View
-                          </button>
-                        </td>
-                        <td className="py-3 px-4">
-                          <button
-                            type="button"
-                            className="text-gray-400 hover:text-gray-600 p-2 rounded-lg transition-colors"
-                            aria-label="More options"
-                          >
-                            <MoreHorizontal size={20} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          {/* Pagination */}
-          <div className="flex flex-col md:flex-row justify-between items-center p-4 md:px-6 gap-4 border-t">
-            <div className="text-gray-500 text-center md:text-left text-sm md:text-base">
-              Showing 1 to {entriesPerPage} of {transactions.length} entries
-            </div>
-            <div className="flex gap-1">
-              <button 
-                className="p-2 border rounded hover:bg-gray-50 transition-colors"
-                aria-label="Previous page"
-                type="button"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button 
-                className="px-4 py-2 border rounded bg-[#4F46E5] text-white hover:bg-[#4338CA] transition-colors"
-                type="button"
-              >
-                1
-              </button>
-              <button 
-                className="px-4 py-2 border rounded hover:bg-gray-50 transition-colors"
-                type="button"
-              >
-                2
-              </button>
-              <button 
-                className="p-2 border rounded hover:bg-gray-50 transition-colors"
-                aria-label="Next page"
-                type="button"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">Error: {error}</p>
+          <button 
+            onClick={fetchMachines}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search by code or name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div className="grid gap-4">
+        {filteredMachines.map((machine) => (
+          <div
+            key={machine.id}
+            className="bg-white p-4 rounded-lg border shadow-sm flex justify-between items-center"
+          >
+            <div>
+              <div className="font-medium">Code: {machine.code}</div>
+              {machine.name && <div className="text-gray-600 mt-1">{machine.name}</div>}
+            </div>
+            <button
+              onClick={() => handleSelect(machine)}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                selectedMachine === machine.id  // เปลี่ยนจาก machine.code เป็น machine.id
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
+            >
+              {selectedMachine === machine.id ? 'Selected' : 'Select'}  {/* เปลี่ยนตรงนี้ด้วย */}
+            </button>
+          </div>
+        ))}
+
+        {filteredMachines.length === 0 && (
+          <div className="text-center py-8 bg-white rounded-lg border">
+            <p className="text-gray-500">
+              {searchTerm ? 'No matching machines found' : 'No active machines available'}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 }

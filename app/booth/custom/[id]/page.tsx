@@ -18,26 +18,34 @@ import { colorsBorder as mockColorsBorder } from "@/app/MockAPI/MockBorderColor"
 import { DropArea } from "@/app/pages_booth/DropArea";
 import { useRouter } from "next/navigation";
 import photoService from "@/app/services/photoService";
+import { useMachineCode } from "@/app/hooks/useMachineCode";
+import machineService from "@/app/services/machineService";
+import { useParams } from 'next/navigation';
+import { StatusType } from "@/types/types";
 
-
+interface MachineInfo {
+  id: string;
+  name: string;
+  code: string;
+  status: StatusType;
+  frames?: Array<{ id: string; image?: string; frame?: string; frameName?: string }>;
+  stickers?: Array<{ id: string; image?: string; sticker?: string; stickerName?: string }>;
+}
   const ItemTypes = {
     IMAGE: "image",
   };
 
-
 //   // กำหนดไซส์รูปขนาดเดิม
-  const getImageSize = (src: string): Promise<{ width: number, height: number }> => {
-    return new Promise((resolve, reject) => {
-      const img = new window.Image();
-      img.src = src;
-      img.onload = () => {
-        resolve({ width: img.width, height: img.height });
-      };
-      img.onerror = (error) => {
-        reject(error);
-      };
-    });
-  };
+const getImageSize = (src: string): Promise<{ width: number, height: number }> => {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.src = src;
+    img.onload = () => resolve({ width: img.width, height: img.height });
+    img.onerror = (error) => reject(error);
+  });
+};
+
+  
 // // ฟังก์ชั่นลากรูปวาง
   const DraggableImage = ({ id, src, alt }: { id: number; src: string; alt: string }) => {
     const [{ isDragging }, drag] = useDrag(() => ({
@@ -92,13 +100,24 @@ import photoService from "@/app/services/photoService";
 
 // Main component with DndProvider wrapping everything
 export default function Custom() {
+  const machineCode = useMachineCode();
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false); 
   const snap = useSnapshot(state);
   const [showModal, setShowModal] = useState(false);
   const dropAreaRef = useRef<HTMLDivElement | null>(null);
+  const [machineStickers, setMachineStickers] = useState<Array<{
+    id: string;
+    sticker?: string;
+    image?: string;
+    stickerName?: string;
+  }>>([]);
+  
 
-
+  const params = useParams();
+  const machineId = params.id as string; // ID จริงจาก API
+  
+  
   const [refreshKey, setRefreshKey] = useState(0);
   const handleClearStickers = () => {
     state.droppedImages = []; // ล้างข้อมูลสติ๊กเกอร์ที่ถูกวางบน DropArea
@@ -108,6 +127,93 @@ export default function Custom() {
   const getText = (englishText: string, thaiText: string) => {
     return snap.language === "TH" ? thaiText : englishText;
   };
+
+  const getMachineStickersFromStorage = (machineId: string): any[] => {
+    if (typeof window === 'undefined') return [];
+    const storedStickers = localStorage.getItem(`machine_stickers_${machineId}`);
+    return storedStickers ? JSON.parse(storedStickers) : [];
+  };
+
+
+  useEffect(() => {
+    const fetchMachineData = async () => {
+      try {
+        // ดึง machineId จาก params หรือ localStorage และแปลงเป็น string
+        const storedMachineId = (params.machineId || localStorage.getItem('selectedMachineId')) as string;
+  
+        if (!storedMachineId) {
+          console.error("No machine ID found");
+          router.push('/dashboard');
+          return;
+        }
+  
+        // ลองดึงจาก localStorage ก่อน
+        const storedStickers = getMachineStickersFromStorage(storedMachineId);
+        if (storedStickers.length > 0) {
+          setMachineStickers(storedStickers);
+          return;
+        }
+  
+        // ถ้าไม่มีใน localStorage ดึงจาก API
+        const response = await machineService.getTransactions();
+        const targetMachine = response.find(machine => machine.id === storedMachineId);
+        
+        if (targetMachine?.stickers) {
+          setMachineStickers(targetMachine.stickers);
+          localStorage.setItem(
+            `machine_stickers_${storedMachineId}`,
+            JSON.stringify(targetMachine.stickers)
+          );
+        }
+  
+      } catch (error) {
+        console.error('Error fetching machine data:', error);
+      }
+    };
+  
+    fetchMachineData();
+  }, [params.machineId, router]);
+  
+  useEffect(() => {
+    const fetchMachineStickers = async () => {
+      try {
+        // ใช้ non-null assertion operator (!) เพื่อบอก TypeScript ว่าค่าไม่เป็น null
+        const storedMachineId: string = params.machineId ? params.machineId.toString() : localStorage.getItem('selectedMachineId') || '';
+        
+        // หรือใช้ type casting
+        // const storedMachineId = (params.machineId || localStorage.getItem('selectedMachineId')) as string;
+    
+        if (!storedMachineId) {
+          console.error("No machine ID found");
+          return;
+        }
+    
+        // ลองดึงจาก localStorage ก่อน
+        const storedStickers = getMachineStickersFromStorage(storedMachineId);
+        if (storedStickers.length > 0) {
+          setMachineStickers(storedStickers);
+          return;
+        }
+    
+        // ถ้าไม่มีใน localStorage ให้ดึงจาก API
+        const response = await machineService.getTransactions();
+        const targetMachine = response.find(machine => machine.id === storedMachineId);
+        
+        if (targetMachine?.stickers) {
+          setMachineStickers(targetMachine.stickers);
+          localStorage.setItem(
+            `machine_stickers_${storedMachineId}`,
+            JSON.stringify(targetMachine.stickers)
+          );
+        }
+      } catch (error) {
+        console.error('Error fetching machine stickers:', error);
+      }
+    };
+  
+    fetchMachineStickers();
+  }, [params.machineId]);
+
 
   useEffect(() => {
     if (window.location.pathname === '/booth/color') {
@@ -130,60 +236,71 @@ export default function Custom() {
    }, []);
    
    const handleNext = async () => {
+    const storedMachineId = localStorage.getItem('selectedMachineId');
+   
+    if (!storedMachineId) {
+      console.error("No machine ID found");
+      router.push('/dashboard');
+      return;
+    }
+   
     const dropAreaElement = dropAreaRef.current;
     if (dropAreaElement) {
       dropAreaElement.style.filter = `brightness(${snap.filterColor})`;
-     
+   
       const canvas = await html2canvas(dropAreaElement);
       const imageURL = canvas.toDataURL("image/png");
-     
+   
       state.savedDropAreaImage = imageURL;
-  
+   
       try {
-        // อัปโหลดรูปภาพ
         const result = await photoService.uploadPhoto({
-          machine_code: "F844597",
+          machine_code: machineCode,
           file: imageURL
         });
-
-        console.log("Raw response:", result); // เช็คข้อมูลที่ได้จาก API
-
-        // ดึงข้อมูลจาก response โดยตรง
+   
+        console.log("Raw response:", result);
+   
         if (result && result.data) {
-          // เก็บข้อมูลเข้า state
           state.uploadedPhotoId = result.data.id;
-          state.uploadedPhotoUrl = result.data.ImageUrl; // ใช้ตัวพิมพ์ใหญ่
-
-          // เก็บข้อมูลใน localStorage สำรอง
+          state.uploadedPhotoUrl = result.data.ImageUrl;
+   
           const photoData = {
             id: result.data.id,
             url: result.data.ImageUrl
           };
           localStorage.setItem('photoData', JSON.stringify(photoData));
-
+   
           console.log("Saved photo data:", photoData);
         } else {
           console.error("Invalid response format:", result);
         }
-
+   
         dropAreaElement.style.filter = '';
       } catch (error) {
         console.error('Error uploading photo:', error);
       }
     }
-    
-    // รอให้ state อัพเดทก่อน navigate
+   
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+   
     setIsVisible(false);
     state.intro = 9;
-    localStorage.setItem('currentIntro', '8');
+    localStorage.setItem('currentIntro', '9');
     setIsVisible(true);
-    router.push('/booth/download');
-};
+    router.push(`/booth/download/${storedMachineId}`);
+   };
    
    const handleBack = () => {
-    setIsVisible(false); 
+    const storedMachineId = localStorage.getItem('selectedMachineId');
+   
+    if (!storedMachineId) {
+      console.error("No machine ID found");
+      router.push('/dashboard');
+      return;
+    }
+   
+    setIsVisible(false);
     setTimeout(() => {
       state.intro = 6;
       localStorage.setItem('currentIntro', '6');
@@ -191,9 +308,9 @@ export default function Custom() {
       setCurrentColorIndex(mockColors.indexOf("#FFFFFF"));
       setCurrentColorIndexBorder(mockColorsBorder.indexOf("#C7C7C7"));
       setTimeout(() => {
-        router.push('/booth/select');
+        router.push(`/booth/select/${storedMachineId}`);
       }, 0);
-    }, 1000); 
+    }, 1000);
    };
 
   const handleCloseModal = () => setShowModal(false);
@@ -500,9 +617,20 @@ const handleRightClick = () => {
                     <div className="border-2 border-transparent flex items-center gap-5">
                       <div className="w-full h-[12rem] overflow-auto border-2 border-[#C6C6C980] rounded-lg p-4 bg-white">
                         <div className="grid grid-cols-5 gap-4 cursor-grab" > 
-                          {MockImages.map((image) => (
-                            <DraggableImage key={image.id} id={image.id} src={image.src} alt={image.alt} />
-                          ))}
+                        {machineStickers.length > 0 ? (
+                          machineStickers.map((sticker) => (
+                            <DraggableImage 
+                              key={sticker.id} 
+                              id={Number(sticker.id)}
+                              src={sticker.sticker || sticker.image || ''} 
+                              alt={sticker.stickerName || `Sticker ${sticker.id}`} 
+                            />
+                          ))
+                        ) : (
+                          <div className="col-span-5 text-center text-gray-500 py-4">
+                            No stickers available for this machine
+                          </div>
+                        )}
                         </div>
                       </div>
                     </div>

@@ -6,6 +6,7 @@ import state from "@/app/valtio_config";
 import { useSnapshot } from "valtio";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useParams } from 'next/navigation'; // เพิ่ม useParams
 
 export default function Selfie() {
     const router = useRouter();
@@ -20,6 +21,8 @@ export default function Selfie() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const maxSteps = snap.selectedDiv === 1 ? 6 : snap.selectedDiv === 2 ? 8 : 6;
     const isCapturingRef = useRef(false); // สถานะการจับภาพ
+    const params = useParams();
+    const machineId = params.machineId as string; 
     
     const handleNext = () => {
       setTimeout(() => {
@@ -38,12 +41,16 @@ export default function Selfie() {
 }, [snap.intro]);
 
 
-  useEffect(() => {
-    if (window.location.pathname === '/booth/selfie') {
-      state.intro = 5;
-      localStorage.setItem('currentIntro', '5');
-    }
-   }, []);
+useEffect(() => {
+  console.log('Machine ID:', machineId);
+  console.log('Current intro state:', snap.intro);
+  
+  if (machineId) {
+    state.intro = 5;
+    localStorage.setItem('currentIntro', '5');
+    console.log('Set intro to 5');
+  }
+}, [machineId]);
    
    // เพิ่ม useEffect สำหรับจัดการการย้อนกลับ
    useEffect(() => {
@@ -59,9 +66,16 @@ export default function Selfie() {
    }, []);
    
    useEffect(() => {
+    const storedMachineId = localStorage.getItem('selectedMachineId');
     let interval: NodeJS.Timeout | null = null;
     const localCountdown = { value: 12 };
     const localStep = { value: 1 };
+   
+    if (!storedMachineId) {
+      console.error("No machine ID found");
+      router.push('/dashboard');
+      return;
+    }
    
     if (snap.intro === 5 && localStep.value <= maxSteps) {
       interval = setInterval(() => {
@@ -81,9 +95,9 @@ export default function Selfie() {
               state.intro = 6;
               localStorage.setItem('currentIntro', '6');
               stopCamera();
-              // นำทางไปหน้า select หลังจาก delay
+              // นำทางไปหน้า select พร้อม machineId
               setTimeout(() => {
-                router.push('/booth/select');
+                router.push(`/booth/select/${storedMachineId}`);
               }, 0);
             }, 1000);
           }

@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { div } from "framer-motion/client";
 import { QRCode } from 'antd';
 import { useRouter } from "next/navigation";
+import { useParams } from 'next/navigation';
 
 const getCurrentTime = () => {
  const now = new Date();
@@ -21,14 +22,20 @@ export default function Save() {
  const [isTimeout, setIsTimeout] = useState(false);
  const [currentTime, setCurrentTime] = useState(getCurrentTime());
  const snap = useSnapshot(state);
+ const params = useParams();
+const machineId = params.id as string; // ID จริงจาก API
 
  // เพิ่ม useEffect สำหรับตรวจสอบ URL
  useEffect(() => {
-   if (window.location.pathname === '/booth/save') {
-     state.intro = 11;
-     localStorage.setItem('currentIntro', '11');
-   }
- }, []);
+  console.log('Machine ID:', machineId);
+  console.log('Current intro state:', snap.intro);
+  
+  if (machineId) {
+    state.intro = 10;
+    localStorage.setItem('currentIntro', '10');
+    console.log('Set intro to 10');
+  }
+}, [machineId]);
 
  // เพิ่ม useEffect สำหรับจัดการการย้อนกลับ
  useEffect(() => {
@@ -45,42 +52,50 @@ export default function Save() {
 
  // อัพเดทเวลาทุกวินาที
  useEffect(() => {
-   const timer = setInterval(() => {
-     setCurrentTime(getCurrentTime());
-   }, 1000);
-   return () => clearInterval(timer);
- }, []);
-
- useEffect(() => {
-   let timer: ReturnType<typeof setInterval> | null = null;
-   
-   if (snap.intro === 9) {
-     setIsVisible(true);
-     
-     timer = setInterval(() => {
-       // ตั้งค่าการทำงานของ timer ถ้าจำเป็น
-     }, 1000);
-   } else {
-     if (timer) clearInterval(timer);
-   }
-
-   return () => {
-     if (timer) clearInterval(timer);
-   };
+  const storedMachineId = localStorage.getItem('selectedMachineId');
+  let timer: ReturnType<typeof setInterval> | null = null;
+ 
+  if (!storedMachineId) {
+    console.error("No machine ID found");
+    router.push('/dashboard');
+    return;
+  }
+ 
+  if (snap.intro === 9) {
+    setIsVisible(true);
+ 
+    timer = setInterval(() => {
+      // ตั้งค่าการทำงานของ timer ถ้าจำเป็น
+    }, 1000);
+  } else {
+    if (timer) clearInterval(timer);
+  }
+ 
+  return () => {
+    if (timer) clearInterval(timer);
+  };
  }, [snap.intro]);
-
+ 
  const handleBack = () => {
-   state.resetSelfieData();
-   setIsVisible(false);
-   setIsTimeout(false);
-   setTimeout(() => {
-     state.intro = 10;
-     localStorage.setItem('currentIntro', '10');
-     setIsVisible(true);
-     setTimeout(() => {
-       router.push('/booth/download');
-     }, 0);
-   }, 1000);
+  const storedMachineId = localStorage.getItem('selectedMachineId');
+ 
+  if (!storedMachineId) {
+    console.error("No machine ID found");
+    router.push('/dashboard');
+    return;
+  }
+ 
+  state.resetSelfieData();
+  setIsVisible(false);
+  setIsTimeout(false);
+  setTimeout(() => {
+    state.intro = 10;
+    localStorage.setItem('currentIntro', '10');
+    setIsVisible(true);
+    setTimeout(() => {
+      router.push(`/booth/download/${storedMachineId}`);
+    }, 0);
+  }, 1000);
  };
 
  const exitAnimation = {

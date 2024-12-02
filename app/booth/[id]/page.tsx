@@ -2,26 +2,32 @@
 import { motion,AnimatePresence } from "framer-motion";
 import { BiSolidLeftArrow } from "react-icons/bi";
 import { BiSolidRightArrow } from "react-icons/bi";
-import state from "../valtio_config";
+import state from "@/app/valtio_config";
 import { useSnapshot } from "valtio";
 import { useState, useEffect } from "react"; // เพิ่ม useEffect
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useParams } from 'next/navigation'; // เพิ่ม useParams
 
 export default function Main() {
  const snap = useSnapshot(state);
  const [isExiting, setIsExiting] = useState(false); 
  const [screenText, setScreenText] = useState("TOUCH SCREEN");
  const router = useRouter();
+ const params = useParams();
+ const machineId = params.machineId as string;
 
  useEffect(() => {
-   // ตรวจสอบ URL ปัจจุบัน
-   if (window.location.pathname === '/booth') {
-     state.intro = 1;
-     localStorage.setItem('currentIntro', '1');
-   }
- }, []);
-
+  console.log('Machine ID:', machineId);
+  console.log('Current intro state:', snap.intro);
+  
+  if (machineId) {
+    state.intro = 1;
+    localStorage.setItem('currentIntro', '1');
+    console.log('Set intro to 1');
+  }
+}, [machineId]);
+ 
  const getText = (englishText: string, thaiText: string) => {
    return snap.language === "TH" ? thaiText : englishText;
  };
@@ -37,16 +43,26 @@ export default function Main() {
  };
 
  const handleClick_snap2 = () => {
-   setIsExiting(true);
-   setTimeout(() => {
-     state.intro = 2;
-     localStorage.setItem('currentIntro', '2');
-     setIsExiting(false);
-     setTimeout(() => {
-       router.push('/booth/format');
-     }, 0); // ตั้งเวลาให้เท่ากับระยะเวลารวมของ exit animations
-   }, 1000);
- };
+  // ดึง machineId จาก params หรือ localStorage
+  const currentMachineId = params.machineId || localStorage.getItem('selectedMachineId');
+  
+  if (!currentMachineId) {
+    // ถ้าไม่มี machineId ให้กลับไปหน้า dashboard
+    router.push('/dashboard');
+    return;
+  }
+
+  setIsExiting(true);
+  setTimeout(() => {
+    state.intro = 2;
+    localStorage.setItem('currentIntro', '2');
+    setIsExiting(false);
+    setTimeout(() => {
+      // navigate พร้อมกับ machineId
+      router.push(`/booth/format/${currentMachineId}`);
+    }, 0);
+  }, 1000);
+};
 
  // เพิ่ม useEffect สำหรับจัดการการย้อนกลับของเบราว์เซอร์
  useEffect(() => {
@@ -93,7 +109,7 @@ export default function Main() {
   return (
     <>
     <AnimatePresence>
-    {(snap.intro === 1 || window.location.pathname === '/booth') && !isExiting && (
+    {(snap.intro === 1 || window.location.pathname === `/booth/${machineId}`) && !isExiting && (
         <div 
           className="w-screen h-screen border-transparent bg-[#F7F7F7] border-2 flex justify-center items-center  relative"
           onClick={handleClick_snap2}

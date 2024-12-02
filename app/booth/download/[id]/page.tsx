@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { QRCode } from 'antd';
 import { useRouter } from "next/navigation";
 import photoService from "@/app/services/photoService";
+import { useParams } from 'next/navigation';
 
 const formatDate = () => {
   const today = new Date();
@@ -28,6 +29,8 @@ export default function Download() {
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const snap = useSnapshot(state);
   const [photoUrl, setPhotoUrl] = useState<string>('');
+  const params = useParams();
+  const machineId = params.id as string; // ID จริงจาก API
 
   // ฟังก์ชันสำหรับดาวน์โหลดรูปภาพ
   const triggerDownload = async (url: string) => {
@@ -100,11 +103,15 @@ export default function Download() {
 
   // ตรวจสอบ URL และ set intro
   useEffect(() => {
-    if (window.location.pathname === '/booth/download') {
-      state.intro = 10;
-      localStorage.setItem('currentIntro', '10');
+    console.log('Machine ID:', machineId);
+    console.log('Current intro state:', snap.intro);
+    
+    if (machineId) {
+      state.intro = 9;
+      localStorage.setItem('currentIntro', '9');
+      console.log('Set intro to 9');
     }
-  }, []);
+  }, [machineId]);
 
   // จัดการการย้อนกลับ
   useEffect(() => {
@@ -120,40 +127,7 @@ export default function Download() {
   }, []);
 
   // จัดการ countdown
-  useEffect(() => {
-    let timer: ReturnType<typeof setInterval>;
-    if (snap.intro === 9) {
-      setCountdown(120);
-      setIsVisible(true);
-
-      timer = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            if (timer) clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [snap.intro]);
-
-  // จัดการ timeout
-  useEffect(() => {
-    if (countdown === 0) {
-      setIsTimeout(true);
-      setTimeout(() => {
-        state.intro = 6;
-        localStorage.setItem('currentIntro', '6');
-        router.push('/booth/select');
-      }, 2000);
-    }
-  }, [countdown, router]);
-
+  
   // แสดงผลครั้งแรก
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -162,34 +136,100 @@ export default function Download() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleNext = () => {
-    setIsVisible(false);
-    setCountdown(120);
-    setIsTimeout(false);
-    setTimeout(() => {
-      state.intro = 10;
-      localStorage.setItem('currentIntro', '10');
-      setIsVisible(true);
-      setTimeout(() => {
-        router.push('/booth/save');
-      }, 0);
-    }, 1000);
-  };
+const handleNext = () => {
+ const storedMachineId = localStorage.getItem('selectedMachineId');
 
-  const handleBack = () => {
-    state.resetSelfieData();
-    setIsVisible(false);
-    setCountdown(120);
-    setIsTimeout(false);
-    setTimeout(() => {
-      state.intro = 7;
-      localStorage.setItem('currentIntro', '7');
-      setIsVisible(true);
-      setTimeout(() => {
-        router.push('/booth/custom');
-      }, 0);
-    }, 1000);
-  };
+ if (!storedMachineId) {
+   console.error("No machine ID found");
+   router.push('/dashboard');
+   return;
+ }
+
+ setIsVisible(false);
+ setCountdown(120);
+ setIsTimeout(false);
+ setTimeout(() => {
+   state.intro = 10;
+   localStorage.setItem('currentIntro', '10');
+   setIsVisible(true);
+   setTimeout(() => {
+     router.push(`/booth/save/${storedMachineId}`);
+   }, 0);
+ }, 1000);
+};
+
+const handleBack = () => {
+ const storedMachineId = localStorage.getItem('selectedMachineId');
+
+ if (!storedMachineId) {
+   console.error("No machine ID found");
+   router.push('/dashboard');
+   return;
+ }
+
+ state.resetSelfieData();
+ setIsVisible(false);
+ setCountdown(120);
+ setIsTimeout(false);
+ setTimeout(() => {
+   state.intro = 7;
+   localStorage.setItem('currentIntro', '7');
+   setIsVisible(true);
+   setTimeout(() => {
+     router.push(`/booth/custom/${storedMachineId}`);
+   }, 0);
+ }, 1000);
+};
+
+useEffect(() => {
+ const storedMachineId = localStorage.getItem('selectedMachineId');
+ let timer: ReturnType<typeof setInterval>;
+
+ if (!storedMachineId) {
+   console.error("No machine ID found");
+   router.push('/dashboard');
+   return;
+ }
+
+ if (snap.intro === 9) {
+   setCountdown(120);
+   setIsVisible(true);
+
+   timer = setInterval(() => {
+     setCountdown(prev => {
+       if (prev <= 1) {
+         if (timer) clearInterval(timer);
+         return 0;
+       }
+       return prev - 1;
+     });
+   }, 1000);
+ }
+
+ return () => {
+   if (timer) clearInterval(timer);
+ };
+}, [snap.intro]);
+
+// จัดการ timeout
+useEffect(() => {
+ const storedMachineId = localStorage.getItem('selectedMachineId');
+
+ if (countdown === 0) {
+   if (!storedMachineId) {
+     console.error("No machine ID found");
+     router.push('/dashboard');
+     return;
+   }
+
+   setIsTimeout(true);
+   setTimeout(() => {
+     state.intro = 6;
+     localStorage.setItem('currentIntro', '6');
+     router.push(`/booth/select/${storedMachineId}`);
+   }, 2000);
+ }
+}, [countdown, router]);
 
   return (
     <AnimatePresence>

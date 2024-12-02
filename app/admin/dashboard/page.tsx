@@ -3,7 +3,7 @@
 import AuthGuard from "@/app/components/AuthGuard";
 import SideBar from "@/app/pages_admin/sidebar-form";
 import Dashboard from "@/app/pages_admin/dash-form";
-import MachineDashEvent from "@/app/pages_admin/dash-event";
+import MachineDashboard from "@/app/pages_admin/dash-form";
 
 export default function AdminDashboard() {
   return (
@@ -13,7 +13,7 @@ export default function AdminDashboard() {
           <SideBar />
         </div>
         <div className="sm:col-span-7 xl:col-span-8 col-span-10">
-          <MachineDashEvent />
+          <MachineDashboard />
         </div>
       </div>
     </AuthGuard>

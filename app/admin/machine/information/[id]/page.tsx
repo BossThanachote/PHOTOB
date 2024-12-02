@@ -8,12 +8,12 @@ import AuthGuard from '@/app/components/AuthGuard'
 import SideBar from '@/app/pages_admin/sidebar-form'
 
 interface MachineInfo {
-  id: string
-  name: string
-  code: string
-  status: StatusType
-  frames?: Array<{ id: string; image?: string; frame?: string; frameName?: string }>
-  stickers?: Array<{ id: string; image?: string; sticker?: string; stickerName?: string }>
+  id: string;
+  name: string;
+  code: string;
+  status: StatusType;
+  frames?: Array<{ id: string; image?: string; frame?: string; frameName?: string }>;
+  stickers?: Array<{ id: string; image?: string; sticker?: string; stickerName?: string }>;
 }
 
 // Helper functions for localStorage

@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { QRCode } from 'antd';
 import { Modal, Button } from 'antd'; 
 import { useRouter } from "next/navigation";
+import { useParams } from 'next/navigation'; // เพิ่ม useParams
 
 export default function Coupon(){
     const router = useRouter();
@@ -19,6 +20,8 @@ export default function Coupon(){
     const [inputValue, setInputValue] = useState('');
     const handleCloseModal = () => setShowModal(false);
     const snap = useSnapshot(state);
+    const params = useParams();
+    const machineId = params.machineId as string; 
 
 
 
@@ -37,11 +40,15 @@ export default function Coupon(){
     };
 
     useEffect(() => {
-      if (window.location.pathname === '/booth/coupon') {
-        state.intro = 13;
-        localStorage.setItem('currentIntro', '13');
+      console.log('Machine ID:', machineId);
+      console.log('Current intro state:', snap.intro);
+      
+      if (machineId) {
+        state.intro = 11;
+        localStorage.setItem('currentIntro', '11');
+        console.log('Set intro to 11');
       }
-     }, []);
+    }, [machineId]);
      
      // เพิ่ม useEffect สำหรับจัดการการย้อนกลับ
      useEffect(() => {
@@ -57,7 +64,15 @@ export default function Coupon(){
      }, []);
      
      const handleNext = () => {
-      if (inputValue.length !== 8) { 
+      const storedMachineId = localStorage.getItem('selectedMachineId');
+     
+      if (!storedMachineId) {
+        console.error("No machine ID found");
+        router.push('/dashboard');
+        return;
+      }
+     
+      if (inputValue.length !== 8) {
         setShowModal(true);
       } else {
         setIsVisible(false);
@@ -66,23 +81,32 @@ export default function Coupon(){
           localStorage.setItem('currentIntro', '5');
           setIsVisible(true);
           setTimeout(() => {
-            router.push('/booth/selfie');
+            router.push(`/booth/selfie/${storedMachineId}`);
           }, 0);
         }, 1000);
       }
      };
      
      const handleBack = () => {
+      const storedMachineId = localStorage.getItem('selectedMachineId');
+     
+      if (!storedMachineId) {
+        console.error("No machine ID found");
+        router.push('/dashboard');
+        return;
+      }
+     
       setIsVisible(false);
       setTimeout(() => {
         state.intro = 3;
         localStorage.setItem('currentIntro', '3');
         setIsVisible(true);
         setTimeout(() => {
-          router.push('/booth/payment');
+          router.push(`/booth/payment/${storedMachineId}`);
         }, 0);
       }, 1000);
      };
+     
     const exitAnimation = {
         scale: [1, 1.2, 0],
         opacity: [1, 0.5, 0],

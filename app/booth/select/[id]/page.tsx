@@ -9,6 +9,8 @@ import { useState, useEffect } from "react";
 import { Modal, Button } from 'antd'; 
 import 'antd/dist/reset.css'; 
 import { useRouter } from "next/navigation";
+import { useParams } from 'next/navigation'; // เพิ่ม useParams
+
 
 export default function Select() {
   const router = useRouter();
@@ -16,6 +18,8 @@ export default function Select() {
   const [isVisible, setIsVisible] = useState(false); 
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const params = useParams();
+  const machineId = params.machineId as string; 
 
   const getText = (englishText: string, thaiText: string) => {
     return snap.language === "TH" ? thaiText : englishText;
@@ -27,11 +31,15 @@ export default function Select() {
   }, [snap.imageSrcs.length]);
 
   useEffect(() => {
-    if (window.location.pathname === '/booth/select') {
+    console.log('Machine ID:', machineId);
+    console.log('Current intro state:', snap.intro);
+    
+    if (machineId) {
       state.intro = 6;
       localStorage.setItem('currentIntro', '6');
+      console.log('Set intro to 6');
     }
-   }, []);
+  }, [machineId]);
    
    // เพิ่ม useEffect สำหรับจัดการการย้อนกลับ
    useEffect(() => {
@@ -47,6 +55,14 @@ export default function Select() {
    }, []);
    
    const handleNext = () => {
+    const storedMachineId = localStorage.getItem('selectedMachineId');
+   
+    if (!storedMachineId) {
+      console.error("No machine ID found");
+      router.push('/dashboard');
+      return;
+    }
+   
     const isFull = selectedImages.every(image => image !== "");
     if (!isFull) {
       setShowModal(true);
@@ -57,13 +73,21 @@ export default function Select() {
         localStorage.setItem('currentIntro', '7');
         setIsVisible(true);
         setTimeout(() => {
-          router.push('/booth/custom');  // หรือหน้าที่ต้องการไป
+          router.push(`/booth/custom/${storedMachineId}`);
         }, 0);
       }, 1000);
     }
    };
    
    const handleBack = () => {
+    const storedMachineId = localStorage.getItem('selectedMachineId');
+   
+    if (!storedMachineId) {
+      console.error("No machine ID found");
+      router.push('/dashboard');
+      return;
+    }
+   
     setIsVisible(false);
     setTimeout(() => {
       state.imageSrcs = [];  // รีเซ็ตภาพถ่าย
@@ -71,10 +95,11 @@ export default function Select() {
       localStorage.setItem('currentIntro', '5');
       setIsVisible(true);
       setTimeout(() => {
-        router.push('/booth/selfie');
+        router.push(`/booth/selfie/${storedMachineId}`);
       }, 0);
     }, 1000);
    };
+   
   const handleImageClick = (src: string) => {
     const nextEmptyIndex = selectedImages.findIndex(image => image === "");
     if (nextEmptyIndex !== -1) {
