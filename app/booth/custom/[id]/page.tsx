@@ -541,32 +541,9 @@ const handleRightClick = () => {
                         )}
                     </div>
                     {/* หัวข้อเลือกสีเฟรม */}
-                    <div className="w-full flex gap-3 items-center font-inter-400 text-[1.5rem] justify-center lg:justify-start">
-                        <Image src="/quan.png" alt="heart" width={10000} height={10000} className="w-[2rem] h-[2rem]" />
-                        <div>Frame color</div>  
-                    </div>
-                    {/* เลือกสีเฟรม */}
-                    <div className="w-full flex items-center font-inter-400 text-[1.5rem] gap-5 mb-[5rem] justify-center lg:justify-start mt-5">
-                    <motion.div 
-                      className="w-[6rem] h-[6rem] bg-white flex justify-center items-center rounded-full cursor-pointer"
-                      onClick={handleLeftClick}
-                      whileTap={{scale:0.7}}
-                    >
-                      <Image src="/totheleft.png" alt="left arrow" width={10000} height={10000} className="w-[1.1rem] h-[1.5rem]" />
-                    </motion.div>
-                    {/* สีเฟรมตรงกลาง */}
-                    <div 
-                      className="w-[6rem] h-[6rem] flex justify-center items-center rounded-full"
-                      style={{ backgroundColor: snap.colors[snap.currentColorIndex] }}
-                    ></div>
-                    <motion.div 
-                      className="w-[6rem] h-[6rem] bg-[#222222] flex justify-center items-center rounded-full cursor-pointer"
-                      onClick={handleRightClick}
-                      whileTap={{scale:0.7}}
-                    >
-                      <Image src="/totheright.png" alt="right arrow" width={10000} height={10000} className="w-[1.1rem] h-[1.5rem]" />
-                    </motion.div>  
-                  </div>
+                    
+
+                  
                 </div>
                 {/* component ภาพถ่าย + ลากรูป */}
                 <DropArea
@@ -587,26 +564,8 @@ const handleRightClick = () => {
                 <div className="xl:w-[30rem] xl:h-[44rem] lg:w-[20rem] lg:h-[44rem] w-[30rem] h-[35rem] border-2 border-transparent px-[1rem] flex items-end" >
                   <div className="w-full h-full justify-center items-center border-2 border-transparent flex flex-col gap-5 text-[#222222]" >
                     {/* หัวข้อเลือกเฟรม */}
-                    <div className="w-full flex gap-3 items-center font-inter-400 text-[1.5rem] justify-center lg:justify-start" onDragStart={(e) => e.preventDefault()}>
-                        <Image src="/quan.png" alt="heart" width={10000} height={10000} className="w-[2rem] h-[2rem]" />
-                        <div>Frame</div>  
-                    </div>
-                    {/* เลือกเฟรม */}
-                    <div className="w-full flex items-center font-inter-400 text-[1.5rem] gap-5 mb-[5rem] justify-center lg:justify-start" onDragStart={(e) => e.preventDefault()}>
-                        <motion.div className="w-[6rem] h-[6rem] bg-white flex justify-center items-center rounded-full cursor-pointer"
-                          whileTap={{scale:0.7}}
-                          onClick={handleLeftClickBorder}
-                        >
-                            <Image src="/totheleft.png" alt="heart" width={10000} height={10000} className="w-[1.1rem] h-[1.5rem]" />
-                        </motion.div>  
-                        <div style={{ color: snap.colorsBorder[snap.currentColorIndexBorder]}}>[ ]</div>
-                        <motion.div className="w-[6rem] h-[6rem] bg-[#222222] flex justify-center items-center rounded-full cursor-pointer"
-                          whileTap={{scale:0.7}}
-                          onClick={handleRightClickBorder}
-                        >
-                            <Image src="/totheright.png" alt="heart" width={10000} height={10000} className="w-[1.1rem] h-[1.5rem]" />
-                        </motion.div>  
-                    </div>
+                    
+                    
                     {/* หัวข้อสติ๊กเกอร์ */}
                     <div className="w-full flex gap-3 items-center font-inter-400 text-[1.5rem] justify-center lg:justify-start" onDragStart={(e) => e.preventDefault()}>
                         <Image src="/heart.png" alt="heart" width={10000} height={10000} className="w-[2rem] h-[2rem]" />
