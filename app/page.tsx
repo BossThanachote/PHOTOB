@@ -1,21 +1,15 @@
-// app/page.tsx
 'use client'
-import { redirect } from 'next/navigation'
 import { useEffect } from 'react'
-import state from "@/app/valtio_config"; // เพิ่ม import state
+import state from "@/app/valtio_config";
 
 export default function Home() {
   useEffect(() => {
-    const selectedMachineId = localStorage.getItem('selectedMachineId');
+    // ตั้งค่าเริ่มต้นเป็น Intro 1 (หน้า Touch Screen)
+    state.intro = 1;
+    localStorage.setItem('currentIntro', '1');
     
-    if (selectedMachineId) {
-      // ตั้งค่า state.intro เป็น 1 ก่อน redirect
-      state.intro = 1;
-      localStorage.setItem('currentIntro', '1');
-      window.location.href = `/booth/${selectedMachineId}`;
-    } else {
-      window.location.href = '/dashboard';
-    }
+    // บังคับวิ่งไปหน้า /booth โดยตรง
+    window.location.href = '/booth'; 
   }, []);
 
   return null;

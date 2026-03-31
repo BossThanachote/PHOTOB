@@ -3,10 +3,9 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { useSnapshot } from "valtio";
-// ตรวจสอบ import path ของ valtio_config ให้ถูกกับโปรเจกต์ของ Boss นะครับ
-import state from "../valtio_config"; 
+import { useRouter } from "next/navigation"; // 🚀 1. Import useRouter
+import state from "@/app/valtio_config"; // เช็ค Path ให้ถูกด้วยนะครับ
 
-// SVG สำหรับแสงแฟลชสีขาวเต็มหน้าจอ
 const FlashEffect = () => (
   <motion.div 
     className="absolute inset-0 bg-white z-[100] pointer-events-none"
@@ -18,27 +17,24 @@ const FlashEffect = () => (
 
 export default function Selfie() {
     const snap = useSnapshot(state);
+    const router = useRouter(); // 🚀 2. เรียกใช้งาน router
     
-    // State สำหรับจัดการ countdown และ steps
-    const [countdown, setCountdown] = useState(12); // เริ่มต้นที่ 12 วินาที
-    const [currentStep, setCurrentStep] = useState(1); // เริ่มต้นที่รูปที่ 1
-    const [flashActive, setFlashActive] = useState(false); // ควบคุมแฟลชตอนถ่าย
+    const [countdown, setCountdown] = useState(12);
+    const [currentStep, setCurrentStep] = useState(1);
+    const [flashActive, setFlashActive] = useState(false);
     
-    // Refs สำหรับจัดการกล้องและ canvas
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const isCapturingRef = useRef(false);
 
-    // กำหนดจำนวนรูปสูงสุดตาม frame ที่เลือก
+    // สมมติว่า default เป็น 6 ช็อต ถ้าหาค่า selectedDiv ไม่เจอ
     const maxSteps = snap.selectedDiv === 1 ? 6 : snap.selectedDiv === 2 ? 8 : 6;
-    
-    // เช็คว่าถ่ายรูปครบหรือยัง
     const isAllDone = currentStep > maxSteps;
 
-    // 1. useEffect: เปิด/ปิดกล้อง และเคลียร์ข้อมูลเมื่อเข้ามาหน้านี้
+    // 1. เปิด/ปิดกล้อง
     useEffect(() => {
         if (snap.intro === 5) {
-            state.imageSrcs = []; // เคลียร์รูปเก่า
+            state.imageSrcs = []; 
             setCountdown(12);
             setCurrentStep(1);
             setFlashActive(false);
@@ -49,52 +45,43 @@ export default function Selfie() {
         return () => stopCamera();
     }, [snap.intro]);
 
-    // 2. useEffect: นับถอยหลัง 12 วินาที
+    // 2. นับถอยหลัง
     useEffect(() => {
         if (snap.intro !== 5 || isAllDone) return;
 
         if (countdown > 0) {
-            const timer = setTimeout(() => {
-                setCountdown((prev) => prev - 1);
-            }, 1000);
+            const timer = setTimeout(() => setCountdown((prev) => prev - 1), 1000);
             return () => clearTimeout(timer);
         } else {
-            // นับถอยหลังถึง 0 -> ถ่ายรูป
             captureImage();
-            
-            // เอฟเฟกต์แฟลช
             setFlashActive(true);
             setTimeout(() => setFlashActive(false), 300);
 
-            // ขยับไป Step ถัดไป (ถ้าครบแล้วเดี๋ยว Effect ตัวล่างจะจัดการเอง)
             setCurrentStep((prev) => prev + 1);
-            setCountdown(12); // ตั้งเวลาใหม่รอไว้เลย
+            setCountdown(12);
         }
     }, [countdown, snap.intro, isAllDone]);
 
-    // 🚀 3. useEffect (เพิ่มใหม่): จับตาดูตอนถ่ายรูปครบแล้วเปลี่ยนหน้า
+    // 3. จับตาดูตอนถ่ายรูปครบ (Finish Sequence)
     useEffect(() => {
         if (snap.intro === 5 && isAllDone) {
             console.log("All photos taken! Preparing transition...");
-            
-            // ปิดกล้องทันทีที่ถ่ายครบ
             stopCamera(); 
 
-            // รอ 3 วินาทีให้ User เห็นคำว่า DONE! ก่อนเด้งไปหน้าถัดไป
             const finishTimer = setTimeout(() => {
                 console.log("Transitioning to intro 6 (Select Photo)");
                 state.intro = 6;
                 localStorage.setItem('currentIntro', '6');
-                // หมายเหตุ: ไม่ต้องใช้ router.push เพราะเราน่าจะรวม Component ไว้หน้าเดียวกัน
-                // หรือถ้าแยกหน้ากันอยู่ Boss ต้องใส่ router.push('/booth/select') ตรงนี้ครับ
-            }, 3000);
+                
+                // 🚀 3. สั่งย้าย URL ไปที่หน้า select
+                router.push('/booth/select'); 
+                
+            }, 3000); // รอ 3 วินาทีโชว์คำว่า DONE! ก่อนเด้ง
 
             return () => clearTimeout(finishTimer);
         }
-    }, [isAllDone, snap.intro]);
+    }, [isAllDone, snap.intro, router]);
 
-
-    // ฟังก์ชันเปิดกล้อง
     const startCamera = () => {
         navigator.mediaDevices.getUserMedia({ video: { aspectRatio: 3 / 4, facingMode: 'user' } })
             .then(stream => {
@@ -105,7 +92,6 @@ export default function Selfie() {
             .catch(error => console.error("Error accessing the camera: ", error));
     };
 
-    // ฟังก์ชันปิดกล้อง
     const stopCamera = () => {
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
@@ -115,7 +101,6 @@ export default function Selfie() {
         }
     };
 
-    // ฟังก์ชันจับภาพ
     const captureImage = () => {
         if (isCapturingRef.current) return;
     
@@ -126,10 +111,9 @@ export default function Selfie() {
     
                 canvasRef.current.width = videoRef.current.videoWidth;
                 canvasRef.current.height = videoRef.current.videoHeight;
-
                 context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
-                const dataUrl = canvasRef.current.toDataURL('image/png', 0.9);
                 
+                const dataUrl = canvasRef.current.toDataURL('image/png', 0.9);
                 state.imageSrcs.push(dataUrl); 
     
                 console.log(`Captured photo URL (step ${currentStep}/${maxSteps})`);
@@ -138,10 +122,13 @@ export default function Selfie() {
         }
     };
 
-    // ปุ่มสำหรับเทส ข้ามไปหน้าถัดไปทันที (ซ่อนอยู่มุมล่างขวาของช่องข้อมูล)
+    // ปุ่ม Force Next (สำหรับเทส)
     const handleForceNext = () => {
         state.intro = 6;
         localStorage.setItem('currentIntro', '6');
+        
+        // 🚀 4. สั่งย้าย URL ในปุ่มเทสด้วย
+        router.push('/booth/select'); 
     };
 
     return (
@@ -154,22 +141,18 @@ export default function Selfie() {
                     transition={{ duration: 0.5, ease: "easeInOut" }}
                     exit={{ scale: [1, 1.2, 0], opacity: [1, 0.5, 0], transition: { duration: 0.5, ease: "easeInOut" } }} 
                 >
-                    
                     {flashActive && <FlashEffect />}
 
                     <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8 lg:gap-16 w-full max-w-6xl">
                         
-                        {/* ส่วนกล้อง (ตรงกลาง) */}
                         <div className="relative flex justify-center items-center w-[20rem] h-[30rem] sm:w-[24rem] sm:h-[36rem] md:w-[27rem] md:h-[40rem] lg:w-[32rem] lg:h-[48rem] bg-white border-[10px] md:border-[15px] border-white shadow-lg overflow-hidden shrink-0">
                             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover mirror-view"></video>
                             <canvas ref={canvasRef} className="hidden"></canvas>
                         </div>
 
-                        {/* ส่วนข้อมูล */}
                         <div className="flex flex-col items-center lg:items-start pt-4 lg:pt-10">
                             
                             <div className="flex flex-row lg:flex-row items-center gap-6 lg:gap-10">
-                                {/* ข้อความ 2/6 */}
                                 <div className="text-white font-bebas-neue-400 text-6xl md:text-7xl lg:text-[6rem] leading-none tracking-wider">
                                     {isAllDone ? "DONE!" : (
                                         <>
@@ -179,7 +162,6 @@ export default function Selfie() {
                                     )}
                                 </div>
 
-                                {/* วงกลมนับเวลาถอยหลัง */}
                                 <div className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 bg-[#8E8E93] rounded-full grid place-items-center shadow-md">
                                     <p className="font-bebas-neue-400 text-white text-5xl md:text-6xl lg:text-7xl leading-none translate-y-1">
                                         {isAllDone ? "DONE" : countdown}
@@ -187,12 +169,10 @@ export default function Selfie() {
                                 </div>
                             </div>
 
-                            {/* ข้อความ Dummy */}
                             <div className="text-white font-inter-400 text-sm md:text-base mt-10 max-w-xs text-center lg:text-left text-[#C6C6C9] leading-relaxed">
                                 Lorem Ipsum is simply dummy text of the printing and typesetting industry.
                             </div>
                             
-                            {/* ปุ่มเทสซ่อน (กดเพื่อ Force ข้ามหน้า) */}
                             <div className="w-6 h-6 border-red-500 border-2 mt-4 cursor-pointer opacity-20 hover:opacity-100 rounded-sm" onClick={handleForceNext} title="Force Next Page"></div>
                         </div>
 

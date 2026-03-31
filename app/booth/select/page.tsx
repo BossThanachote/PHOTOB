@@ -1,16 +1,16 @@
 'use client'
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation"; // ยังไม่ต้องใช้ถ้ารวมหน้า
 import { motion, AnimatePresence } from "framer-motion";
 import { IoIosArrowDropleft, IoIosArrowDropright } from "react-icons/io";
 import Image from "next/image";
 import { Modal, Button } from 'antd'; 
 import { useSnapshot } from "valtio";
-import state from "../valtio_config";
+import state from "@/app/valtio_config"; // เช็ค Path ให้ถูกนะครับ
 import 'antd/dist/reset.css'; 
 
-// SVG Placeholder Icon สำหรับช่องที่ยังไม่เลือกรูป
+// SVG Placeholder สำหรับช่องว่าง
 const ImageIcon = () => (
   <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-white" xmlns="http://www.w3.org/2000/svg">
     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -20,7 +20,6 @@ const ImageIcon = () => (
 );
 
 export default function Select() {
-  const router = useRouter();
   const snap = useSnapshot(state);
   
   const [isClient, setIsClient] = useState(false);
@@ -28,34 +27,37 @@ export default function Select() {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [showModal, setShowModal] = useState(false);
 
-  // สมมติว่าใน valtio state.imageSrcs มีรูปที่ถ่ายมา 6 รูป
-  // ตัวแปรนี้คือกำหนดว่ากรอบฝั่งซ้ายมีกี่ช่อง (ขึ้นอยู่กับเฟรมที่เลือก)
-  const maxSlots = 6; 
+  // กำหนดจำนวนช่องที่ต้องเลือก (อ้างอิงจากเฟรมที่เลือกในหน้า Format)
+  // สมมติฐาน: snap.selectedDiv = 1 คือเฟรม 6 ช่อง, 2 คือเฟรม 8 ช่อง
+  const maxSlots = snap.selectedDiv === 1 ? 6 : snap.selectedDiv === 2 ? 8 : 6; 
 
   useEffect(() => {
     setIsClient(true);
-    // รีเซ็ต selectedImages ให้เป็น array ว่างๆ ตามจำนวนช่อง (เช่น 6 ช่อง)
+    
+    // 💡 ไม่ต้อง set state.intro = 6 ตรงนี้ เพราะหน้า Camera เป็นคนส่งมาให้แล้ว
+    // ถ้ายัดตรงนี้ มันอาจจะบั๊กตอน Refresh หน้าเว็บครับ
+    
+    // สร้าง Array ว่างๆ ตามจำนวนช่อง (เช่น 6 ช่อง)
     setSelectedImages(Array(maxSlots).fill(""));
     
     const timer = setTimeout(() => setIsVisible(true), 500);
     return () => clearTimeout(timer);
-  }, [maxSlots]); // รันใหม่ถ้า maxSlots เปลี่ยน
+  }, [maxSlots]);
 
   const getText = (en: string, th: string) => snap.language === "TH" ? th : en;
 
   const handleNext = () => {
-    // เช็คว่าช่องฝั่งซ้ายมีรูปครบทุกช่องหรือยัง
+    // เช็คว่าเลือกรูปครบทุกช่องหรือยัง
     const isFull = selectedImages.every(image => image !== "");
+    
     if (!isFull) {
       setShowModal(true); 
     } else {
       setIsVisible(false); 
       setTimeout(() => {
-        // อัปเดตรูปที่เลือกลง valtio
+        // เซฟรูปลง State กลาง แล้วส่งไปหน้า 7 (เช่น ตกแต่งรูป)
         state.selectedImages = [...selectedImages];
         state.intro = 7; 
-        // 🚀 [TODO] เปลี่ยนหน้าไปหน้าถัดไป (เช่น หน้าตกแต่ง Custom หรือ Download)
-        // router.push('/booth/custom');
       }, 500); 
     }
   };
@@ -63,17 +65,15 @@ export default function Select() {
   const handleBack = () => {
     setIsVisible(false); 
     setTimeout(() => {
-      // 💡 Boss: การกดย้อนกลับไปหน้า Camera หมายถึงลบรูปทิ้งทั้งหมดแล้วถ่ายใหม่ใช่ไหมครับ?
+      // กลับไปหน้ากล้อง (intro = 5) และล้างรูปที่เพิ่งถ่ายออกให้หมด
       state.imageSrcs = [];  
       state.intro = 5; 
-      // router.push('/booth/camera');
+      localStorage.setItem('currentIntro', '5');
     }, 500); 
   };
 
-  // คลิกรูปฝั่งขวา -> เอาไปใส่ช่องว่างแรกฝั่งซ้าย
   const handleImageClick = (src: string) => {
-    // เช็คก่อนว่ารูปนี้ถูกเลือกไปแล้วหรือยัง (ถ้าไม่อยากให้เลือกซ้ำ)
-    if (selectedImages.includes(src)) return;
+    if (selectedImages.includes(src)) return; // กันเลือกรูปซ้ำ
 
     const nextEmptyIndex = selectedImages.findIndex(img => img === "");
     if (nextEmptyIndex !== -1) {
@@ -83,21 +83,19 @@ export default function Select() {
     }
   };
 
-  // คลิกรูปฝั่งซ้าย -> ลบรูปออกจากช่องนั้น
   const handleClearImage = (index: number) => {
     const updatedImages = [...selectedImages];
     updatedImages[index] = "";
     setSelectedImages(updatedImages);
   };
 
-  const handleCloseModal = () => setShowModal(false);
-
   if (!isClient) return null;
 
   return (
     <AnimatePresence> 
-      {snap.intro == 6 && isVisible && (
-        <div className="w-screen h-screen flex flex-col justify-between bg-[#F7F7F7] select-none overflow-hidden">
+      {/* 🚀 ตรงนี้สำคัญ: เช็คว่าเป็น intro = 6 เท่านั้นถึงจะโชว์ */}
+      {snap.intro === 6 && isVisible && (
+        <div className="w-screen h-screen flex flex-col justify-between bg-[#F7F7F7] select-none overflow-hidden absolute top-0 left-0 z-50">
           
           {/* Navbar */}
           <motion.div 
@@ -127,7 +125,6 @@ export default function Select() {
             </button>
           </motion.div>
 
-          {/* Title for Mobile */}
           <div className="flex justify-center md:hidden pb-4">
              <p className="font-bebas-neue-400 text-[1.5rem] text-center" style={{ letterSpacing: '5px' }}>
               {getText("PLEASE SELECT PHOTO", "กรุณาเลือกรูปภาพ")}
@@ -137,14 +134,13 @@ export default function Select() {
           {/* Main Content */}
           <div className="w-full flex-1 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 xl:gap-32 pb-10">
             
-            {/* ฝั่งซ้าย: กรอบรูปที่จะเรียง (Polaroid Style) */}
+            {/* ฝั่งซ้าย: กรอบรูป (Polaroid) */}
             <motion.div 
               className="w-[18rem] md:w-[22rem] lg:w-[26rem] xl:w-[30rem] bg-white p-4 pb-16 md:pb-24 shadow-xl border border-gray-200"
               initial={{ scale: 0.9, opacity: 0, x: -50 }} 
               animate={{ scale: 1, opacity: 1, x: 0, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
               exit={{ scale: 0.9, opacity: 0, x: -50, transition: { duration: 0.3 } }}
             >
-              {/* Grid 2 คอลัมน์ 3 แถว */}
               <div className="w-full grid grid-cols-2 gap-2">
                 {selectedImages.map((src, index) => (
                     <motion.div 
@@ -164,17 +160,15 @@ export default function Select() {
               </div>
             </motion.div>
 
-            {/* ฝั่งขวา: รูปที่ถ่ายมาให้เลือก */}
+            {/* ฝั่งขวา: รูปที่ถ่ายมา */}
             <motion.div 
               className="w-[18rem] md:w-[26rem] lg:w-[32rem] xl:w-[38rem] grid grid-cols-3 gap-3 md:gap-4"
               initial={{ scale: 0.9, opacity: 0, x: 50 }} 
               animate={{ scale: 1, opacity: 1, x: 0, transition: { type: 'spring', stiffness: 300, damping: 20, delay: 0.1 } }}
               exit={{ scale: 0.9, opacity: 0, x: 50, transition: { duration: 0.3 } }}
             >
-              {/* สมมติว่าถ่ายมา 6 รูป ก็โชว์ 6 รูป */}
-              {/* 💡 Boss: ถ้าตอนเทสใน Valtio ไม่มีรูป ให้จำลอง mock array ไปพลางๆ ก่อนได้ครับ เช่น Array(6).fill('') */}
-              {snap.imageSrcs.length > 0 ? snap.imageSrcs.map((src, index) => {
-                // เช็คว่ารูปนี้ถูกเลือกไปฝั่งซ้ายหรือยัง (ถ้าเลือกแล้วอาจจะทำให้อ่อนลง หรือคลิกไม่ได้)
+              {/* ดึงรูปจาก state.imageSrcs มาโชว์ */}
+              {snap.imageSrcs.length > 0 ? snap.imageSrcs.map((src:any, index:number) => {
                 const isSelected = selectedImages.includes(src);
 
                 return (
@@ -190,8 +184,6 @@ export default function Select() {
                     ) : (
                        <ImageIcon />
                     )}
-                    
-                    {/* ถ้าเลือกไปแล้ว โชว์เครื่องหมายติ๊กถูกนิดนึง */}
                     {isSelected && (
                       <div className="absolute inset-0 bg-black/20 flex justify-center items-center">
                         <p className="text-white font-bebas-neue-400 text-3xl drop-shadow-md">✓</p>
@@ -200,8 +192,8 @@ export default function Select() {
                   </motion.div>
                 );
               }) : (
-                // กรณีโหลดมาแล้วไม่มีรูป (เอาไว้เผื่อเทส UI)
-                Array(6).fill('').map((_, i) => (
+                // ถ้ายังไม่มีรูป ให้โชว์กรอบเทาๆ ไว้ก่อน (กันหน้าจอแหว่งตอนทดสอบ UI)
+                Array(maxSlots).fill('').map((_, i) => (
                   <div key={i} className="w-full aspect-[3/4] bg-[#C6C6C9] flex justify-center items-center rounded-sm">
                     <ImageIcon />
                   </div>
@@ -210,12 +202,11 @@ export default function Select() {
             </motion.div>
           </div>
             
-          {/* Modal Alert */}
-          <Modal open={showModal} onCancel={handleCloseModal} centered footer={null} className="select-none">
+          <Modal open={showModal} onCancel={() => setShowModal(false)} centered footer={null} className="select-none">
             <div className="flex flex-col items-center text-center p-4">
               <iframe src="https://lottie.host/embed/ffc20d8a-075d-4548-a3bf-6e32a66c5dd0/Cyhnz0Jxar.json" className="w-48 h-48 border-none"></iframe>
               <p className="text-xl mb-6 font-medium">{getText("Please select all photos to proceed", "กรุณาเลือกรูปภาพให้ครบก่อนดำเนินการ")}</p>
-              <Button size="large" type="primary" className="bg-black hover:bg-gray-800 px-10" onClick={handleCloseModal}>
+              <Button size="large" type="primary" className="bg-black hover:bg-gray-800 px-10" onClick={() => setShowModal(false)}>
                 {getText("OK","ตกลง")}
               </Button>
             </div>

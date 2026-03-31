@@ -1,0 +1,63 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------
+// 1. ตารางข้อมูลตู้ (Machine)
+// ---------------------------------------------------------
+model Machine {
+  id        String   @id @default(uuid())
+  name      String
+  location  String?
+  isActive  Boolean  @default(true)
+  sessions  Session[]
+}
+
+// ---------------------------------------------------------
+// 2. ตารางข้อมูลเฟรม/ราคา (Frame)
+// ---------------------------------------------------------
+model Frame {
+  id        String   @id @default(uuid())
+  name      String
+  price     Int
+  shotCount Int      // เช่น 6 หรือ 8 ช็อต
+  frameUrl  String   // URL รูปไฟล์ PNG ของกรอบรูป
+  isActive  Boolean  @default(true)
+  sessions  Session[]
+}
+
+// ---------------------------------------------------------
+// 3. ตารางข้อมูลการใช้งานแต่ละรอบ (Session)
+// ---------------------------------------------------------
+model Session {
+  id             String      @id @default(uuid())
+  machineId      String
+  machine        Machine     @relation(fields: [machineId], references: [id])
+  frameId        String
+  frame          Frame       @relation(fields: [frameId], references: [id])
+  paymentMethod  String      // 'THAIQR', 'ALIPAY', 'COUPON'
+  paymentStatus  String      @default("PENDING") // 'PENDING', 'SUCCESS', 'FAILED'
+  amountPaid     Int
+  createdAt      DateTime    @default(now())
+  
+  photos         Photo[]
+  finalImageUrl  String?     // URL ของรูปที่รวมเสร็จสมบูรณ์แล้ว
+}
+
+// ---------------------------------------------------------
+// 4. ตารางเก็บรูปภาพย่อยๆ ที่ถ่าย (Photo)
+// ---------------------------------------------------------
+model Photo {
+  id         String   @id @default(uuid())
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id])
+  photoUrl   String   // URL รูปที่ถ่ายแต่ละช็อต
+  orderIndex Int      // ลำดับรูป (1, 2, 3...)
+  createdAt  DateTime @default(now())
+}
