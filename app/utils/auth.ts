@@ -8,7 +8,7 @@ export const auth = {
   // เก็บ Token ลงใน Cookie
   setToken: (token: string) => {
     Cookies.set(TOKEN_KEY, token, { 
-      expires: 7, // หมดอายุใน 7 วัน
+      expires: 7, // หมดอายุใน 7 วันs
       secure: true, 
       sameSite: 'strict' 
     });
