@@ -27,7 +27,7 @@ export default function SignIn() {
       const result = await loginAction(formData)
       
       if (result.success && result.user) {
-        // บันทึกสถานะลง Cookie/Local Storage ฝั่ง Client (ไฟล์ utils ของ Boss)
+        // บันทึกสถานะลง Cookie/Local Storage ฝั่ง Client (ไฟล์ utils ของ Bosss)
         handleLoginSuccess('session-active', {
           id: result.user.id,
           name: result.user.name || 'Admin',
