@@ -2,7 +2,6 @@
 
 import AuthGuard from "@/app/components/AuthGuard";
 import SideBar from "@/app/pages_admin/sidebar-form";
-import Dashboard from "@/app/pages_admin/dash-form";
 import MachineDashboard from "@/app/pages_admin/dash-form";
 
 export default function AdminDashboard() {

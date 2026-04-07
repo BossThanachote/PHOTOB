@@ -1,54 +1,39 @@
 // utils/auth.ts
-
 import Cookies from 'js-cookie';
-import { jwtDecode } from 'jwt-decode';
+
 const TOKEN_KEY = 'auth_token';
+const USER_KEY = 'auth_user';
+
+// 1. ฟังก์ชันจัดการเมื่อ Login สำเร็จ (ใช้ในหน้า SignIn)
+export const handleLoginSuccess = (token: string, userData?: any) => {
+  // สำคัญ: ใส่ path: '/' เพื่อให้ทุกหน้าอ่าน Cookie ตัวเดียวกันได้
+  Cookies.set(TOKEN_KEY, token, { expires: 7, path: '/' }); 
+  if (userData) {
+    Cookies.set(USER_KEY, JSON.stringify(userData), { expires: 7, path: '/' });
+  }
+};
+
+
+export const getAuthHeaders = () => {
+  const token = Cookies.get(TOKEN_KEY);
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+};
 
 export const auth = {
-  // เก็บ Token ลงใน Cookie
-  setToken: (token: string) => {
-    Cookies.set(TOKEN_KEY, token, { 
-      expires: 7, // หมดอายุใน 7 วัน
-      secure: true, 
-      sameSite: 'strict' 
-    });
-  },
-
-  // ดึง Token ออกมาใช้งาน
-  getToken: () => {
-    return Cookies.get(TOKEN_KEY);
-  },
-
-  // ลบ Token (Logout)
-  removeToken: () => {
-    Cookies.remove(TOKEN_KEY);
-  },
-
-  // ตรวจสอบว่า User ล็อกอินอยู่หรือไม่
-  isAuthenticated: (): boolean => {
-    const token = Cookies.get(TOKEN_KEY);
-    if (!token) return false;
-
-    try {
-      const decoded: any = jwtDecode(token);
-      const currentTime = Date.now() / 1000;
-      // ตรวจสอบว่า Token หมดอายุหรือยัง
-      return decoded.exp > currentTime;
-    } catch (error) {
-      return false;
-    }
-  },
-
-  // ดึงข้อมูล User จาก Token
+  getToken: () => Cookies.get(TOKEN_KEY),
   getUser: () => {
-    const token = Cookies.get(TOKEN_KEY);
-    if (!token) return null;
+    const user = Cookies.get(USER_KEY);
     try {
-      return jwtDecode(token);
-    } catch (error) {
+      return user ? JSON.parse(user) : null;
+    } catch {
       return null;
     }
+  },
+  isAuthenticated: () => {
+    const token = Cookies.get(TOKEN_KEY);
+    return !!token; // คืนค่า true ถ้ามี token
   }
-
-  
-};
+}

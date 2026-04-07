@@ -1,44 +1,53 @@
 'use server'
 
-import { prisma } from '@/app/lib/prisma' // Import จากที่เราแยกไว้
+import { supabase } from '@/app/lib/supabase' // เปลี่ยนมาใช้ตัวเชื่อม Supabase
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation' // เพิ่มเติมสำหรับเปลี่ยนหน้า
 
 export async function loginAction(formData: FormData) {
-  const email = formData.get('email') as string               
+  const email = formData.get('email') as string
   const password = formData.get('password') as string
 
   try {
-    const admin = await prisma.admin.findUnique({
-      where: { email }
-    })
+    // ดึงข้อมูล Admin จาก Supabase
+    const { data: admin, error } = await supabase
+      .from('admin')
+      .select('*')
+      .eq('email', email)
+      .single()
+    console.log("🔍 ผลการค้นหา:", admin); // ดูค่าใน Terminal
+    console.log("❌ Error ถ้ามี:", error);
 
-    if (admin && admin.password === password) {
+    if (error || !admin) {
+      return { success: false, message: 'ไม่พบอีเมลนี้ในระบบ' }
+    }
+
+    // เช็ครหัสผ่าน (เทียบ Plain Text ตามข้อมูลที่ Boss มีใน DB)
+    if (admin.password === password) {
       const cookieStore = await cookies()
-      
+
+      // เก็บ Session เบื้องต้น
       cookieStore.set('admin_session', admin.id, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // ใช้ Secure ใน Production
+        secure: process.env.NODE_ENV === 'production',
         path: '/',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 
+        maxAge: 60 * 60 * 24
       })
 
-      return { 
-        success: true, 
-        user: { id: admin.id, name: admin.name, email: admin.email, role: admin.role } 
+      return {
+        success: true,
+        user: {
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role
+        }
       }
     }
 
-    return { success: false, message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' }
+    return { success: false, message: 'รหัสผ่านไม่ถูกต้อง' }
   } catch (error) {
-    console.error(error)
+    console.error("Login Error:", error)
     return { success: false, message: 'เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล' }
   }
-}
-
-export async function logoutAction() {
-  const cookieStore = await cookies()
-  cookieStore.delete('admin_session')
-  // redirect('/login') // ปกติ logout มักจะทำ redirect ไปด้วยเลย
 }

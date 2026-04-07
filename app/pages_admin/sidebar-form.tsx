@@ -24,23 +24,25 @@ export default function SideBar() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const token = Cookies.get('auth_token')
-    const userData = Cookies.get('user_data')
+  // เปลี่ยนชื่อคุกกี้ให้ตรงกับที่เก็บใน handleLoginSuccess
+  const token = Cookies.get('auth_token')
+  const userData = Cookies.get('auth_user') // เปลี่ยนจาก user_data เป็น auth_user
 
-    if (!token || !userData) {
-      router.push('/admin/signin')
-      return
-    }
+  if (!token || !userData) {
+    console.log("Sidebar: No auth data found, skipping profile set.");
+    // แทนที่จะสั่ง push ตรงนี้ ให้ AuthGuard เป็นคนจัดการเรื่องไล่คนออกจะดีกว่าครับ
+    // เพื่อป้องกันการสั่ง push ซ้อนกันหลายรอบ
+    return 
+  }
 
-    try {
-      const parsedUserData = JSON.parse(userData)
-      setProfile(parsedUserData)
-      setEditName(parsedUserData.name)
-    } catch (error) {
-      console.error('Error parsing user data:', error)
-      router.push('/admin/signin')
-    }
-  }, [router])
+  try {
+    const parsedUserData = JSON.parse(userData)
+    setProfile(parsedUserData)
+    setEditName(parsedUserData.name)
+  } catch (error) {
+    console.error('Error parsing user data:', error)
+  }
+}, [router])
 
   useEffect(() => {
     const path = pathname.split('/')
@@ -85,20 +87,20 @@ export default function SideBar() {
   }
 
   const handleSaveName = () => {
-    if (!profile) return
-    
-    const updatedProfile = { ...profile, name: editName }
-    setProfile(updatedProfile)
-    
-    // Update in cookies
-    Cookies.set('user_data', JSON.stringify(updatedProfile), {
-      path: '/',
-      secure: true,
-      sameSite: 'lax'
-    })
-    
-    setIsEditing(false)
-  }
+  if (!profile) return
+  
+  const updatedProfile = { ...profile, name: editName }
+  setProfile(updatedProfile)
+  
+  // Update ใน cookies (ใช้ชื่อ auth_user)
+  Cookies.set('auth_user', JSON.stringify(updatedProfile), {
+    path: '/',
+    secure: true,
+    sameSite: 'lax'
+  })
+  
+  setIsEditing(false)
+}
 
   const handleCancelEdit = () => {
     if (profile) {

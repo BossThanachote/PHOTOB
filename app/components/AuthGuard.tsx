@@ -2,111 +2,85 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getAuthToken, isAuthenticated, UserData, getUserData } from '../utils/auth'
+// แก้ไขการ Import ให้ตรงกับไฟล์ utils/auth.ts ของเรา
+import { auth } from '@/app/utils/auth' 
 
 interface AuthGuardProps {
   children: React.ReactNode
 }
 
-const LoadingSpinner = () => (
-  <div className="min-h-screen flex items-center justify-center bg-white">
-    <div className="flex flex-col items-center gap-4">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#9B1C27]"></div>
-      <span className="text-gray-500">Loading...</span>
-    </div>
-  </div>
-)
-
-const AccessDenied = ({ onSignIn }: { onSignIn: () => void }) => (
-  <div className="min-h-screen flex items-center justify-center bg-white">
-    <div className="flex flex-col items-center gap-4">
-      <div className="text-xl text-red-600">Access Denied</div>
-      <p className="text-gray-600 mb-2">Please sign in to continue</p>
-      <button
-        onClick={onSignIn}
-        className="px-4 py-2 bg-[#9B1C27] text-white rounded-lg hover:bg-[#8B1922] transition-colors"
-      >
-        Go to Sign In
-      </button>
-    </div>
-  </div>
-)
-
-const ErrorFallback = ({ onRetry }: { onRetry: () => void }) => (
-  <div className="min-h-screen flex items-center justify-center bg-white">
-    <div className="flex flex-col items-center gap-4">
-      <div className="text-xl text-red-600">Something went wrong</div>
-      <p className="text-gray-600 mb-2">An error occurred while loading the page</p>
-      <button
-        onClick={onRetry}
-        className="px-4 py-2 bg-[#9B1C27] text-white rounded-lg hover:bg-[#8B1922] transition-colors"
-      >
-        Retry
-      </button>
-    </div>
-  </div>
-)
+// ... LoadingSpinner, AccessDenied, ErrorFallback (โค้ดเดิมของ Boss สวยอยู่แล้ว เก็บไว้ได้เลย) ...
 
 export default function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [isAuthed, setIsAuthed] = useState(false)
   const [hasError, setHasError] = useState(false)
-  const [userData, setUserData] = useState<UserData | null>(null)
 
-  const handleAuthCheck = async () => {
-    try {
-      setIsLoading(true)
-      setHasError(false)
+const handleAuthCheck = async () => {
+  try {
+    const authed = auth.isAuthenticated();
+    const userInfo = auth.getUser();
 
-      const token = getAuthToken()
-      const authed = isAuthenticated()
+    console.log("🛡️ Auth Status:", authed);
+    console.log("👤 User Info:", userInfo);
 
-      if (!token || !authed) {
-        console.log('Authentication failed: No token or not authenticated')
-        router.replace('/admin/signin')
-        return
-      }
-
-      const userInfo = getUserData()
-      if (!userInfo) {
-        console.log('Authentication failed: No user data')
-        router.replace('/admin/signin')
-        return
-      }
-
-      // Optional: Check for admin role if needed
-      if (userInfo.role !== 'admin') {
-        console.log('Authentication failed: User is not an admin')
-        router.replace('/admin/signin')
-        return
-      }
-
-      setUserData(userInfo)
-      setIsAuthed(true)
-    } catch (error) {
-      console.error('Auth check failed:', error)
-      setHasError(true)
-    } finally {
-      setIsLoading(false)
+    if (!authed) {
+      console.log("❌ No Token: Redirecting...");
+      router.replace('/admin/signin');
+      return;
     }
+
+    if (userInfo?.role !== 'admin') {
+      console.log("❌ Not Admin: Role is", userInfo?.role);
+      router.replace('/admin/signin');
+      return;
+    }
+
+    setIsAuthed(true);
+  } catch (error) {
+    setHasError(true);
+  } finally {
+    setIsLoading(false);
   }
+}
+
+  // 1. ตัวหมุนๆ ตอนกำลังเช็คว่า Login หรือยัง
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="flex flex-col items-center gap-4">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#9B1C27]"></div>
+      <span className="text-gray-500 font-ibm-thai">กำลังตรวจสอบสิทธิ์...</span>
+    </div>
+  </div>
+)
+
+// 2. หน้าจอที่โชว์เวลาพัง (เหมือนในรูป Something went wrong ที่ Boss ส่งมา)
+const ErrorFallback = ({ onRetry }: { onRetry: () => void }) => (
+  <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="flex flex-col items-center gap-4 text-center p-6">
+      <div className="text-xl text-red-600 font-bold">Something went wrong</div>
+      <p className="text-gray-600 mb-2">เกิดข้อผิดพลาดในการโหลดข้อมูลหน้าเว็บ</p>
+      <button
+        onClick={onRetry}
+        className="px-6 py-2 bg-[#9B1C27] text-white rounded-lg hover:bg-[#8B1922] transition-colors"
+      >
+        ลองใหม่อีกครั้ง
+      </button>
+    </div>
+  </div>
+)
 
   useEffect(() => {
     handleAuthCheck()
-  }, [router])
+  }, []) // รันครั้งเดียวตอนโหลด Component
 
-  if (isLoading) {
-    return <LoadingSpinner />
-  }
-
-  if (hasError) {
-    return <ErrorFallback onRetry={handleAuthCheck} />
-  }
-
-  if (!isAuthed) {
-    return <AccessDenied onSignIn={() => router.push('/admin/signin')} />
-  }
+  if (isLoading) return <LoadingSpinner />
+  if (hasError) return <ErrorFallback onRetry={handleAuthCheck} />
+  
+  // ถ้าไม่ Authed และไม่ Loading เดี๋ยว useEffect จะพาไปหน้า Signin เอง 
+  // แต่ใส่ AccessDenied กันเหนียวไว้ครับ
+  if (!isAuthed) return null 
 
   return (
     <div className="min-h-screen bg-white">

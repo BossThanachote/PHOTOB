@@ -7,11 +7,14 @@ import { IoIosArrowDropleft } from "react-icons/io";
 import { QRCode } from 'antd';
 import { useSnapshot } from "valtio";
 import state from "@/app/valtio_config";
-import 'antd/dist/reset.css';
+import { useBoothSession } from "@/app/lib/useBoothSession";
+import { Loader2 } from "lucide-react";
+
 
 export default function Alipay() {
   const router = useRouter();
   const snap = useSnapshot(state);
+  const { session, isLoading } = useBoothSession()
 
   const [isClient, setIsClient] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -96,6 +99,10 @@ export default function Alipay() {
 
   if (!isClient) return null;
 
+  if (isLoading || !session) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-12 h-12" /></div>
+  }
+  
   return (
     <AnimatePresence>
       {isVisible && (

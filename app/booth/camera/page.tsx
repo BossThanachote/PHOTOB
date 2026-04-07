@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from "react";
 import { useSnapshot } from "valtio";
 import { useRouter } from "next/navigation"; // 🚀 1. Import useRouter
 import state from "@/app/valtio_config"; // เช็ค Path ให้ถูกด้วยนะครับ
+import { useBoothSession } from "@/app/lib/useBoothSession";
+import { Loader2 } from "lucide-react";
 
 const FlashEffect = () => (
   <motion.div 
@@ -18,6 +20,7 @@ const FlashEffect = () => (
 export default function Selfie() {
     const snap = useSnapshot(state);
     const router = useRouter(); // 🚀 2. เรียกใช้งาน router
+    const { session, isLoading } = useBoothSession()
     
     const [countdown, setCountdown] = useState(12);
     const [currentStep, setCurrentStep] = useState(1);
@@ -26,9 +29,8 @@ export default function Selfie() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const isCapturingRef = useRef(false);
-
-    // สมมติว่า default เป็น 6 ช็อต ถ้าหาค่า selectedDiv ไม่เจอ
-    const maxSteps = snap.selectedDiv === 1 ? 6 : snap.selectedDiv === 2 ? 8 : 6;
+    
+    const maxSteps = session?.frame?.shot || 6;
     const isAllDone = currentStep > maxSteps;
 
     // 1. เปิด/ปิดกล้อง
@@ -130,6 +132,10 @@ export default function Selfie() {
         // 🚀 4. สั่งย้าย URL ในปุ่มเทสด้วย
         router.push('/booth/select'); 
     };
+
+    if (isLoading || !session) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-12 h-12" /></div>
+  }
 
     return (
         <AnimatePresence>

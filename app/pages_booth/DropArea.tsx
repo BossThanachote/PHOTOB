@@ -115,12 +115,22 @@ export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
         if (delta && dropArea) {
           try {
             getImageSize(item.src).then(({ width, height }) => {
-              let x = delta.x - dropArea.left - (width / 2);
-              let y = delta.y - dropArea.top - (height / 2);
+              
+              // 🚀 1. บังคับขนาดสูงสุดของสติ๊กเกอร์ตอนวาง (เช่น 120px)
+              const MAX_SIZE = 120; 
+              // คำนวณอัตราส่วนเพื่อไม่ให้ภาพเสียทรง (ถ้าภาพเล็กกว่า 120px อยู่แล้วก็ไม่ขยาย)
+              const scale = Math.min(MAX_SIZE / width, MAX_SIZE / height, 1); 
+              
+              const renderWidth = width * scale;
+              const renderHeight = height * scale;
+
+              // 🚀 2. ใช้ขนาดที่ย่อแล้วมาคำนวณตำแหน่ง เมาส์จะได้อยู่ตรงกลางสติ๊กเกอร์เป๊ะๆ
+              let x = delta.x - dropArea.left - (renderWidth / 2);
+              let y = delta.y - dropArea.top - (renderHeight / 2);
 
               state.droppedImages = [
                 ...state.droppedImages,
-                { ...item, x, y, width, height },
+                { ...item, x, y, width: renderWidth, height: renderHeight },
               ];
 
               if (isLargeScreen) {
@@ -137,8 +147,8 @@ export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
                   ...item,
                   x,
                   y,
-                  width,
-                  height,
+                  width: renderWidth, // 🚀 3. เซฟขนาดใหม่ลง State
+                  height: renderHeight,
                 },
               ]);
             });
@@ -263,6 +273,7 @@ export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
                     width: image.width,
                     height: image.height,
                     zIndex: 20,
+                    pointerEvents: "none" // 🚀 4. เพิ่มคำสั่งนี้ กันสติ๊กเกอร์ซ้อนกันแล้วเมาส์ไปติดอันเก่า
                   }}
                 >
                   <Image 
@@ -270,6 +281,7 @@ export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
                     alt={image.alt} 
                     width={image.width} 
                     height={image.height}
+                    className="w-full h-full object-contain drop-shadow-md"
                   />
                 </div>
               ))}

@@ -1,14 +1,15 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import machineService from '../services/machineService';
+import { supabase } from '@/app/lib/supabase'; 
 import { Loader2, Search } from 'lucide-react';
-import { StatusType } from '@/types/types';
 
 interface MachineData {
   id: string;
-  code: string;
   name: string;
-  status: StatusType;
+  status: string;
+  location?: string;
 }
 
 export default function MachineDashboard() {
@@ -19,25 +20,21 @@ export default function MachineDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
 
-  const getMachineNameFromStorage = (machineId: string): string | null => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(`machine_name_${machineId}`);
-  };
-
-  // Fetch machines and filter for active ones
+  // Fetch machines จาก Supabase
   const fetchMachines = async () => {
     try {
       setIsLoading(true);
-      const data = await machineService.getTransactions();
-      // Filter only active machines
-      const activeMachines = data
-        .filter(machine => machine.status.toLowerCase() === 'active')
-        .map(machine => ({
-          ...machine,
-          name: getMachineNameFromStorage(machine.id) || machine.name
-        }));
-      setMachines(activeMachines);
       setError(null);
+
+      // ดึงข้อมูลจากตาราง machine (ตัวเล็กตามใน DB)
+      const { data, error: sbError } = await supabase
+        .from('machine')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (sbError) throw sbError;
+
+      setMachines(data || []);
     } catch (err) {
       console.error('Failed to load machines:', err);
       setError(err instanceof Error ? err.message : 'Failed to load machines');
@@ -46,9 +43,7 @@ export default function MachineDashboard() {
     }
   };
 
-  // Load selected machine from localStorage on mount
   useEffect(() => {
-    // เปลี่ยนจาก selectedMachineCode เป็น selectedMachineId
     const savedMachineId = localStorage.getItem('selectedMachineId');
     if (savedMachineId) {
       setSelectedMachine(savedMachineId);
@@ -56,25 +51,23 @@ export default function MachineDashboard() {
     fetchMachines();
   }, []);
 
-  // Filter machines based on search term
+  // Filter ตามชื่อ หรือ สถานที่
   const filteredMachines = machines.filter(machine =>
-    machine.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    machine.name.toLowerCase().includes(searchTerm.toLowerCase())
+    machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (machine.location && machine.location.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleSelect = (machine: MachineData) => {
     setSelectedMachine(machine.id);
-    // เก็บข้อมูลใน localStorage
     localStorage.setItem('selectedMachineId', machine.id);
-    localStorage.setItem('selectedMachineCode', machine.code);
     localStorage.setItem('selectedMachineName', machine.name);
-    
-  
+    // ถ้า Boss อยากให้เลือกเสร็จแล้วไปหน้าอื่นต่อ ใส่ router.push ตรงนี้ได้เลย
   };
+
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      <div className="flex justify-center items-center min-h-screen bg-white">
+        <Loader2 className="h-8 w-8 animate-spin text-[#9B1C27]" />
       </div>
     );
   }
@@ -82,11 +75,11 @@ export default function MachineDashboard() {
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">Error: {error}</p>
+        <div className="text-center p-6 bg-red-50 rounded-2xl border border-red-100">
+          <p className="text-red-600 font-bold mb-4">Error: {error}</p>
           <button 
             onClick={fetchMachines}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+            className="bg-[#9B1C27] text-white px-6 py-2 rounded-xl hover:bg-[#8B1922] transition-colors"
           >
             Retry
           </button>
@@ -96,47 +89,57 @@ export default function MachineDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search by code or name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6 font-ibm-thai">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6 text-gray-800">เลือกตู้ Photobooth</h1>
+        
+        <div className="relative mb-6">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input
+            type="text"
+            placeholder="ค้นหาชื่อตู้ หรือ สถานที่..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-14 pl-12 pr-4 bg-white border-2 border-transparent rounded-2xl shadow-sm focus:border-[#9B1C27] outline-none transition-all"
+          />
+        </div>
 
-      <div className="grid gap-4">
-        {filteredMachines.map((machine) => (
-          <div
-            key={machine.id}
-            className="bg-white p-4 rounded-lg border shadow-sm flex justify-between items-center"
-          >
-            <div>
-              <div className="font-medium">Code: {machine.code}</div>
-              {machine.name && <div className="text-gray-600 mt-1">{machine.name}</div>}
-            </div>
-            <button
-              onClick={() => handleSelect(machine)}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedMachine === machine.id  // เปลี่ยนจาก machine.code เป็น machine.id
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+        <div className="grid gap-4">
+          {filteredMachines.map((machine) => (
+            <div
+              key={machine.id}
+              className={`p-5 rounded-2xl border-2 bg-white flex justify-between items-center transition-all ${
+                selectedMachine === machine.id ? 'border-[#9B1C27] shadow-md' : 'border-transparent shadow-sm'
               }`}
             >
-              {selectedMachine === machine.id ? 'Selected' : 'Select'}  {/* เปลี่ยนตรงนี้ด้วย */}
-            </button>
-          </div>
-        ))}
+              <div>
+                <div className="font-bold text-lg text-gray-800">{machine.name}</div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`w-2 h-2 rounded-full ${machine.status === 'online' ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                  <span className="text-sm text-gray-500 uppercase">{machine.status}</span>
+                  {machine.location && <span className="text-sm text-gray-400">| {machine.location}</span>}
+                </div>
+              </div>
+              
+              <button
+                onClick={() => handleSelect(machine)}
+                className={`px-6 py-2 rounded-xl font-bold transition-all ${
+                  selectedMachine === machine.id 
+                    ? 'bg-[#9B1C27] text-white' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {selectedMachine === machine.id ? 'Selected' : 'Select'}
+              </button>
+            </div>
+          ))}
 
-        {filteredMachines.length === 0 && (
-          <div className="text-center py-8 bg-white rounded-lg border">
-            <p className="text-gray-500">
-              {searchTerm ? 'No matching machines found' : 'No active machines available'}
-            </p>
-          </div>
-        )}
+          {filteredMachines.length === 0 && (
+            <div className="text-center py-12 bg-white rounded-2xl border-2 border-dashed">
+              <p className="text-gray-400">ไม่พบตู้ที่กำลังค้นหา</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { loginAction } from "@/app/admin/actions/auth"
 import { handleLoginSuccess } from "@/app/utils/auth" // Path ตามที่ Boss วางไว้
 
+
 export default function SignIn() {
   const router = useRouter()
   const [email, setEmail] = useState("")
@@ -14,37 +15,34 @@ export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+ // ในไฟล์ SignIn.tsx (หน้าที่มี Form Login)
 
-    const formData = new FormData()
-    formData.append('email', email)
-    formData.append('password', password)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsLoading(true); // ในหน้า SignIn มีตัวนี้อยู่แล้ว
+  setError("");       // ในหน้า SignIn มีตัวนี้อยู่แล้ว
 
-    try {
-      const result = await loginAction(formData)
+  const formData = new FormData();
+  formData.append('email', email);
+  formData.append('password', password);
+
+  try {
+    const result = await loginAction(formData);
+    
+    if (result.success && result.user) {
+      // เรียกใช้ฟังก์ชันจาก utils ที่เราแก้ตะกี้
+      handleLoginSuccess('session-active', result.user);
       
-      if (result.success && result.user) {
-        // บันทึกสถานะลง Cookie/Local Storage ฝั่ง Client (ไฟล์ utils ของ Bosss)
-        handleLoginSuccess('session-active', {
-          id: result.user.id,
-          name: result.user.name || 'Admin',
-          email: result.user.email,
-          role: result.user.role as 'admin' | 'user'
-        })
-        
-        router.push('/admin/dashboard')
-      } else {
-        setError(result.message || "เข้าสู่ระบบไม่สำเร็จ")
-      }
-    } catch (err) {
-      setError("เกิดข้อผิดพลาดในการเชื่อมต่อ")
-    } finally {
-      setIsLoading(false)
+      router.push('/admin/dashboard');
+    } else {
+      setError(result.message || "เข้าสู่ระบบไม่สำเร็จ");
     }
+  } catch (err) {
+    setError("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+  } finally {
+    setIsLoading(false);
   }
+};
 
   return (
     <div className="min-h-screen bg-white font-ibm-thai">
