@@ -196,35 +196,33 @@ export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
           }}
         >
           <div className="w-full h-full border-transparent flex-col flex">
-            {/* Header with HAPPY DAY */}
-            <div className="flex flex-col border-transparent lg:h-[10rem] h-[7rem]">
+           {/* Header with HAPPY DAY */}
+            <div className="flex flex-col border-transparent lg:h-[10rem] h-[7rem] mb-10">
               <div className="w-full h-[10%] border-transparent flex justify-end pt-2 pr-2">
-                <Image src="/sun.png" alt="sun" width={1000} height={1000} className="w-[2rem] h-[2rem]" />
+                <Image src="/sun.png" alt="sun" width={100} height={100} className="w-[2rem] h-[2rem]" />
               </div>
+              
+              {/* 🚀 จัดการตรงนี้ใหม่ */}
               <div className="w-full h-[80%] border-transparent flex justify-center items-center pt-[3rem] lg:pt-[3rem] font-dream-sparks-400 text-[3rem] lg:text-[3rem]">
-                <Image 
-                  src="/moon.png" 
-                  alt="moon" 
-                  width={1000} 
-                  height={1000} 
-                  className="w-[2rem] h-[2.2rem] absolute mr-[18rem] mb-[8rem]" 
-                />
-                <p className="text-black absolute z-0">HAPPY DAY</p>
-                <p 
-                  className="text-white absolute z-10 ml-[0.3rem] mt-[0.2rem] text-shadow-black-2"
-                  style={{ color: bgColorColor }}
-                >
-                  HAPPY DAY
-                </p>
+                
+                <div className="relative flex justify-center items-center whitespace-nowrap">
+                  <Image 
+                    src="/moon.png" 
+                    alt="moon" 
+                    width={100} 
+                    height={100} 
+                    className="w-[2rem] h-[2.2rem] absolute -left-[3rem]" 
+                  />
+                  
+                  {/* 🚀 ใช้ span + whitespace-nowrap บังคับให้อยู่บรรทัดเดียวกันเสมอ */}
+                  <span className="text-black absolute z-0 mt-[6px] ml-[8px]">HAPPY DAY</span>
+                  <span className="text-white relative z-10" style={{ color: bgColorColor }}>HAPPY DAY</span>
+                </div>
+
               </div>
+              
               <div className="w-full h-[10%] border-transparent flex justify-end pb-[1.8rem] pr-2">
-                <Image 
-                  src="/cloud-q.png" 
-                  alt="cloud" 
-                  width={1000} 
-                  height={1000} 
-                  className="w-[1.5rem] h-[1rem] absolute" 
-                />
+                <Image src="/cloud-q.png" alt="cloud" width={100} height={100} className="w-[1.5rem] h-[1rem] absolute" />
               </div>
             </div>
 

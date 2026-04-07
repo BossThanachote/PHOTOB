@@ -8,6 +8,7 @@ import state from "@/app/valtio_config";
 import { useSnapshot } from "valtio";
 import { CheckCircle2, Home, Loader2, QrCode } from "lucide-react";
 import { supabase } from "@/app/lib/supabase";
+import { IoIosArrowDropleft } from "react-icons/io";
 
 export default function DownloadPage() {
   const router = useRouter();
@@ -63,6 +64,13 @@ export default function DownloadPage() {
 
   const getText = (en: string, th: string) => snap.language === "TH" ? th : en;
 
+  // ฟังก์ชันย้อนกลับไปหน้าตกแต่ง
+  const handleBack = () => {
+    state.intro = 7;
+    localStorage.setItem('currentIntro', '7');
+    router.push('/booth/custom');
+  };
+  
   // ฟังก์ชันล้างค่าทั้งหมด เตรียมต้อนรับลูกค้าคนต่อไป!
   const handleFinish = () => {
     // 1. ล้าง State กลาง (Valtio)
@@ -90,13 +98,26 @@ export default function DownloadPage() {
         
         {/* Navbar */}
         <motion.div 
-          className="flex justify-center items-center w-full px-10 py-6 bg-white shadow-sm z-50 shrink-0"
+          className="flex justify-between items-center w-full px-6 lg:px-10 py-6 bg-white shadow-sm z-50 shrink-0"
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1, transition: { type: "spring", damping: 20 } }}
         >
-          <h1 className="font-bebas-neue-400 text-3xl md:text-4xl tracking-[10px] text-gray-800">
+          {/* ซ้าย: ปุ่ม Back */}
+          <button 
+            onClick={handleBack} 
+            className="font-inter-400 lg:text-xl text-[#666666] bg-gray-50 py-3 px-4 sm:py-4 sm:px-8 rounded-2xl flex items-center hover:bg-gray-100 transition-colors w-[140px] justify-center"
+          >
+            <IoIosArrowDropleft className="w-[1.5rem] h-[1.5rem] mr-2 text-black"/>
+            {getText("Back", "กลับ")}
+          </button>
+
+          {/* กลาง: ข้อความหัวข้อ */}
+          <h1 className="font-bebas-neue-400 text-2xl md:text-4xl tracking-[10px] text-gray-800 absolute left-1/2 transform -translate-x-1/2">
             {getText("GET YOUR PHOTO", "รับรูปภาพของคุณ")}
           </h1>
+
+          {/* ขวา: กล่องเปล่า (ล่องหน) เพื่อถ่วงน้ำหนัก Flex ให้หัวข้ออยู่กึ่งกลางเป๊ะๆ */}
+          <div className="w-[140px]"></div>
         </motion.div>
 
         {/* Main Content */}
@@ -144,7 +165,7 @@ export default function DownloadPage() {
               ) : errorMsg ? (
                 <p className="text-red-500 text-sm font-bold">{errorMsg}</p>
               ) : photoUrl ? (
-                // 🚀 ใช้ API สร้าง QR Code ฟรีแบบง่ายๆ แค่ยัดลิงก์เข้าไป
+                // 🚀 ใช้ API สร้าง QR Code
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(photoUrl)}`} 
                   alt="QR Code" 
