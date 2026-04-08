@@ -6,14 +6,13 @@ import { IoIosArrowDropleft } from "react-icons/io";
 import { IoIosArrowDropright } from "react-icons/io";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { div } from "framer-motion/client";
 import { QRCode } from 'antd';
-import { DiSmashingMagazine } from "react-icons/di";
+
 
 const formatDate = () => {
     const today = new Date();
     const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' }; 
-    return today.toLocaleDateString('en-US', options); // ได้ฟอร์แมตที่เป็น "Feb 22, 2024"
+    return today.toLocaleDateString('en-US', options); 
     }
   
 
@@ -30,7 +29,7 @@ export default function Download(){
         // เมื่อ state.intro = 5 ให้เริ่มการนับถอยหลัง
         if (snap.intro === 9) {
             setCountdown(120); // รีเซ็ต countdown ทุกครั้งที่เข้า intro = 5
-            setIsVisible(true); // ตั้งค่าให้เห็นหน้าจอ
+            setIsVisible(true); 
 
             // เริ่มการนับถอยหลัง
             timer = setInterval(() => {
@@ -48,9 +47,9 @@ export default function Download(){
     useEffect(() => {
         // เมื่อ countdown ถึง 0 ให้แสดง Timeout 2 วินาที จากนั้นเปลี่ยนเป็น intro = 6
         if (countdown === 0) {
-            setIsTimeout(true); // แสดงข้อความ Timeout
+            setIsTimeout(true); 
             setTimeout(() => {
-                state.intro = 6; // หลังจาก 2 วินาทีเปลี่ยนไปที่ intro = 6
+                state.intro = 6; 
             }, 2000);
         }
     }, [countdown]);
@@ -58,21 +57,21 @@ export default function Download(){
     const handleNext = () => {
         setIsVisible(false); 
         setCountdown(120);
-        setIsTimeout(false); // ซ่อน Timeout หากมีการกดปุ่ม
-        setTimeout(() => {
+        setIsTimeout(false); 
+        setTimeout(() => {          
             state.intro = 10; 
             setIsVisible(true); 
         }, 1200); 
     };
 
     const handleBack = () => {
-        state.resetSelfieData(); // เรียกฟังก์ชันรีเซ็ตสถานะ
+        state.resetSelfieData(); // เรียกฟังก์ชันรีเซ็ตสถานะ       
     
         setIsVisible(false); 
         setCountdown(120);
-        setIsTimeout(false); // ซ่อน Timeout หากมีการกดปุ่ม
+        setIsTimeout(false); 
         setTimeout(() => {
-            state.intro = 8; // กลับไปที่หน้าก่อนหน้า
+            state.intro = 8; 
             setIsVisible(true); 
         }, 1200);
         
@@ -221,8 +220,8 @@ export default function Download(){
                                     <div className="flex flex-col justify-center items-center border-[1px] gap-4 border-transparent h-[32rem] mb-[1rem]">
                                     <QRCode
                                       value="https://watt-photo-booth.s3.ap-southeast-1.amazonaws.com/sticker/teKYjfejrTGbObl16367875001106882..png"
-                                      size={300} // กำหนดขนาดของ QR code
-                                      style={{ marginTop: '20px' }} // ใช้เพิ่ม styling ถ้าต้องการ                                    
+                                      size={300} 
+                                      style={{ marginTop: '20px' }}                                   
                                     />
                                     <div className="w-[80%] text-center font-inter-400 text-base text-[#8E8E93]">
                                         Lorem Ipsum is simply dummy text of the printing and typesetting industry. 

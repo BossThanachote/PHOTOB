@@ -1,12 +1,11 @@
 'use client'
 
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { DndProvider, useDrag } from "react-dnd";
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import state from "@/app/valtio_config";
 import { useSnapshot } from "valtio";
 import { IoIosArrowDropleft, IoIosArrowDropright } from "react-icons/io";
-import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { ChromePicker } from "react-color";
 import html2canvas from 'html2canvas';
@@ -15,8 +14,8 @@ import { DropArea } from "@/app/pages_booth/DropArea";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useBoothSession } from "@/app/lib/useBoothSession";
-import { supabase } from '@/app/lib/supabase'; // 🚀 นำเข้า Supabase
-import { colorsBorder as mockColorsBorder } from "@/app/MockAPI/MockBorderColor"; // 🚀 เพิ่มบรรทัดนี้กลับมา
+import { supabase } from '@/app/lib/supabase'; 
+import { colorsBorder as mockColorsBorder } from "@/app/MockAPI/MockBorderColor";
 const ItemTypes = { IMAGE: "image" };
 
 const getImageSize = (src: string): Promise<{ width: number, height: number }> => {
@@ -62,7 +61,7 @@ export default function Custom() {
   const [refreshKey, setRefreshKey] = useState(0);
   const dropAreaRef = useRef<HTMLDivElement | null>(null);
 
-  // 🚀 ฟังก์ชันดึงสติ๊กเกอร์ (แก้เป็นดึงทั้งหมดในระบบมาโชว์เลย)
+  // ฟังก์ชันดึงสติ๊กเกอร์ 
   useEffect(() => {
     const fetchAllStickers = async () => {
       try {
@@ -83,7 +82,7 @@ export default function Custom() {
     };
 
     fetchAllStickers();
-  }, []); // ไม่ต้องรอเช็ค session ID อีกต่อไป โหลดหน้าปุ๊บดึงปั๊บ!
+  }, []); 
 
   useEffect(() => {
     state.intro = 7;
@@ -152,17 +151,16 @@ export default function Custom() {
               </div>
 
               {/* Center: Preview */}
-              {/* Center: Preview */}
               <div className="shrink-0 shadow-2xl border-[12px] border-white rounded-xl bg-white">
                 <DropArea
                   ref={dropAreaRef}
                   key={refreshKey}
                   currentColorIndex={snap.currentColorIndex || 0}
-                  currentColorIndexBorder={snap.currentColorIndexBorder || 0} // 🚀 เพิ่มบรรทัดนี้
+                  currentColorIndexBorder={snap.currentColorIndexBorder || 0} 
                   colors={mockColors}
-                  colorsBorder={mockColorsBorder} // 🚀 เพิ่มบรรทัดนี้
+                  colorsBorder={mockColorsBorder}
                   bgColorColor={bgColorColor}
-                  bgColorGray={bgColorGray} // 🚀 เพิ่มบรรทัดนี้
+                  bgColorGray={bgColorGray} 
                   filterColor={snap.filterColor || ''}
                   droppedImages={[...(snap.droppedImages || [])]}
                   selectedImages={[...(snap.selectedImages || [])]} 

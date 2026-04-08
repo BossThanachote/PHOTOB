@@ -1,10 +1,9 @@
 import { supabase } from '@/app/lib/supabase';
 
 export const machineService = {
-  // ดึงข้อมูลตู้ทั้งหมดจาก Supabase
   getMachines: async () => {
     const { data, error } = await supabase
-      .from('machine') // ชื่อตารางที่เราสร้างใน SQL
+      .from('machine') 
       .select('*')
       .order('last_active', { ascending: false });
 

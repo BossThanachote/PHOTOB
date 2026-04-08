@@ -3,8 +3,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { useSnapshot } from "valtio";
-import { useRouter } from "next/navigation"; // 🚀 1. Import useRouter
-import state from "@/app/valtio_config"; // เช็ค Path ให้ถูกด้วยนะครับ
+import { useRouter } from "next/navigation"; 
+import state from "@/app/valtio_config"; 
 import { useBoothSession } from "@/app/lib/useBoothSession";
 import { Loader2 } from "lucide-react";
 
@@ -19,7 +19,7 @@ const FlashEffect = () => (
 
 export default function Selfie() {
     const snap = useSnapshot(state);
-    const router = useRouter(); // 🚀 2. เรียกใช้งาน router
+    const router = useRouter(); 
     const { session, isLoading } = useBoothSession()
     
     const [countdown, setCountdown] = useState(12);
@@ -33,7 +33,7 @@ export default function Selfie() {
     const maxSteps = session?.frame?.shot || 6;
     const isAllDone = currentStep > maxSteps;
 
-    // 1. เปิด/ปิดกล้อง
+    // เปิด/ปิดกล้อง
     useEffect(() => {
         if (snap.intro === 5) {
             state.imageSrcs = []; 
@@ -47,7 +47,7 @@ export default function Selfie() {
         return () => stopCamera();
     }, [snap.intro]);
 
-    // 2. นับถอยหลัง
+    // นับถอยหลัง
     useEffect(() => {
         if (snap.intro !== 5 || isAllDone) return;
 
@@ -64,7 +64,7 @@ export default function Selfie() {
         }
     }, [countdown, snap.intro, isAllDone]);
 
-    // 3. จับตาดูตอนถ่ายรูปครบ (Finish Sequence)
+    // จับตาดูตอนถ่ายรูปครบ (Finish Sequence)
     useEffect(() => {
         if (snap.intro === 5 && isAllDone) {
             console.log("All photos taken! Preparing transition...");
@@ -179,7 +179,7 @@ export default function Selfie() {
                                 Lorem Ipsum is simply dummy text of the printing and typesetting industry.
                             </div>
                             
-                            <div className="w-6 h-6 border-red-500 border-2 mt-4 cursor-pointer opacity-20 hover:opacity-100 rounded-sm" onClick={handleForceNext} title="Force Next Page"></div>
+                            {/* <div className="w-6 h-6 border-red-500 border-2 mt-4 cursor-pointer opacity-20 hover:opacity-100 rounded-sm" onClick={handleForceNext} title="Force Next Page"></div> */}
                         </div>
 
                     </div>

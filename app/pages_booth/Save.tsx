@@ -3,11 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import state from "../valtio_config";
 import { useSnapshot } from "valtio";
 import { IoIosArrowDropleft } from "react-icons/io";
-import { IoIosArrowDropright } from "react-icons/io";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { div } from "framer-motion/client";
-import { QRCode } from 'antd';
+
 
 const getCurrentTime = () => {
   const now = new Date();
@@ -23,10 +21,10 @@ export default function Save(){
 
     useEffect(() => {
       const timer = setInterval(() => {
-          setCurrentTime(getCurrentTime()); // อัปเดตเวลาทุกวินาที
+          setCurrentTime(getCurrentTime()); 
       }, 1000);
 
-      return () => clearInterval(timer); // ล้าง interval เมื่อ component ถูก unmount
+      return () => clearInterval(timer);       
   }, []);
 
   useEffect(() => {
@@ -49,9 +47,9 @@ export default function Save(){
     
         setIsVisible(false); 
      
-        setIsTimeout(false); // ซ่อน Timeout หากมีการกดปุ่ม
+        setIsTimeout(false); 
         setTimeout(() => {
-            state.intro = 9; // กลับไปที่หน้าก่อนหน้า
+            state.intro = 9; 
             setIsVisible(true); 
         }, 1200);
       

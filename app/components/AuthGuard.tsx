@@ -2,14 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-// แก้ไขการ Import ให้ตรงกับไฟล์ utils/auth.ts ของเรา
 import { auth } from '@/app/utils/auth' 
 
 interface AuthGuardProps {
   children: React.ReactNode
 }
-
-// ... LoadingSpinner, AccessDenied, ErrorFallback (โค้ดเดิมของ Boss สวยอยู่แล้ว เก็บไว้ได้เลย) ...
 
 export default function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter()
@@ -45,7 +42,7 @@ const handleAuthCheck = async () => {
   }
 }
 
-  // 1. ตัวหมุนๆ ตอนกำลังเช็คว่า Login หรือยัง
+  //  ตอนกำลังเช็คว่า Login หรือยัง
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center bg-white">
     <div className="flex flex-col items-center gap-4">
@@ -55,7 +52,7 @@ const LoadingSpinner = () => (
   </div>
 )
 
-// 2. หน้าจอที่โชว์เวลาพัง (เหมือนในรูป Something went wrong ที่ Boss ส่งมา)
+//  หน้าจอที่โชว์ Error
 const ErrorFallback = ({ onRetry }: { onRetry: () => void }) => (
   <div className="min-h-screen flex items-center justify-center bg-white">
     <div className="flex flex-col items-center gap-4 text-center p-6">
@@ -73,13 +70,12 @@ const ErrorFallback = ({ onRetry }: { onRetry: () => void }) => (
 
   useEffect(() => {
     handleAuthCheck()
-  }, []) // รันครั้งเดียวตอนโหลด Component
+  }, []) 
 
   if (isLoading) return <LoadingSpinner />
   if (hasError) return <ErrorFallback onRetry={handleAuthCheck} />
   
-  // ถ้าไม่ Authed และไม่ Loading เดี๋ยว useEffect จะพาไปหน้า Signin เอง 
-  // แต่ใส่ AccessDenied กันเหนียวไว้ครับ
+  // ถ้าไม่ Authed และไม่ Loading เดี๋ยว useEffect จะพาไปหน้า Signin 
   if (!isAuthed) return null 
 
   return (

@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import state from "@/app/valtio_config";
 import { useSnapshot } from "valtio";
 import { CheckCircle2, Home, Loader2, QrCode } from "lucide-react";
@@ -32,7 +31,7 @@ export default function DownloadPage() {
           throw new Error("ไม่พบรูปภาพ กรุณาเริ่มทำรายการใหม่");
         }
 
-        // 2. แปลงรูป Base64 เป็นไฟล์จริงๆ (Blob)
+        // 2. แปลงรูป Base64 (Blob)
         const res = await fetch(base64Image);
         const blob = await res.blob();
         const fileExt = "png";
@@ -71,22 +70,22 @@ export default function DownloadPage() {
     router.push('/booth/custom');
   };
   
-  // ฟังก์ชันล้างค่าทั้งหมด เตรียมต้อนรับลูกค้าคนต่อไป!
+  // ฟังก์ชันล้างค่าทั้งหมด กลับไปหน้าแรก
   const handleFinish = () => {
-    // 1. ล้าง State กลาง (Valtio)
+    // State กลาง (Valtio)
     state.imageSrcs = [];
     state.droppedImages = [];
     state.selectedImages = [];
     state.savedDropAreaImage = '';
     state.intro = 1;
     
-    // 2. ล้าง LocalStorage (แต่เก็บ active_booth_id ไว้ให้ตู้จำตัวเองได้)
+    // LocalStorage (แต่เก็บ active_booth_id ไว้ให้ตู้จำตัวเองได้)
     localStorage.removeItem('selectedFrame');
     localStorage.removeItem('selectedFrameId');
     localStorage.removeItem('selectedFrameShot');
     localStorage.setItem('currentIntro', '1');
 
-    // 3. ส่งกลับหน้าแรก
+    // ส่งกลับหน้าแรก
     router.push('/booth');
   };
 
@@ -115,8 +114,6 @@ export default function DownloadPage() {
           <h1 className="font-bebas-neue-400 text-2xl md:text-4xl tracking-[10px] text-gray-800 absolute left-1/2 transform -translate-x-1/2">
             {getText("GET YOUR PHOTO", "รับรูปภาพของคุณ")}
           </h1>
-
-          {/* ขวา: กล่องเปล่า (ล่องหน) เพื่อถ่วงน้ำหนัก Flex ให้หัวข้ออยู่กึ่งกลางเป๊ะๆ */}
           <div className="w-[140px]"></div>
         </motion.div>
 

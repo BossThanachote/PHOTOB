@@ -1,9 +1,7 @@
 'use client'
 import { motion, AnimatePresence } from "framer-motion";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import { useDrop } from "react-dnd";
 import state from "../valtio_config";
-import { useSnapshot } from "valtio";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import React, { forwardRef, useImperativeHandle } from 'react';
@@ -116,7 +114,7 @@ export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
           try {
             getImageSize(item.src).then(({ width, height }) => {
               
-              // 🚀 1. บังคับขนาดสูงสุดของสติ๊กเกอร์ตอนวาง (เช่น 120px)
+           
               const MAX_SIZE = 120; 
               // คำนวณอัตราส่วนเพื่อไม่ให้ภาพเสียทรง (ถ้าภาพเล็กกว่า 120px อยู่แล้วก็ไม่ขยาย)
               const scale = Math.min(MAX_SIZE / width, MAX_SIZE / height, 1); 
@@ -124,7 +122,7 @@ export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
               const renderWidth = width * scale;
               const renderHeight = height * scale;
 
-              // 🚀 2. ใช้ขนาดที่ย่อแล้วมาคำนวณตำแหน่ง เมาส์จะได้อยู่ตรงกลางสติ๊กเกอร์เป๊ะๆ
+             
               let x = delta.x - dropArea.left - (renderWidth / 2);
               let y = delta.y - dropArea.top - (renderHeight / 2);
 
@@ -147,7 +145,7 @@ export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
                   ...item,
                   x,
                   y,
-                  width: renderWidth, // 🚀 3. เซฟขนาดใหม่ลง State
+                  width: renderWidth, 
                   height: renderHeight,
                 },
               ]);
@@ -202,7 +200,7 @@ export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
                 <Image src="/sun.png" alt="sun" width={100} height={100} className="w-[2rem] h-[2rem]" />
               </div>
               
-              {/* 🚀 จัดการตรงนี้ใหม่ */}
+     
               <div className="w-full h-[80%] border-transparent flex justify-center items-center pt-[3rem] lg:pt-[3rem] font-dream-sparks-400 text-[3rem] lg:text-[3rem]">
                 
                 <div className="relative flex justify-center items-center whitespace-nowrap">
@@ -213,8 +211,6 @@ export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
                     height={100} 
                     className="w-[2rem] h-[2.2rem] absolute -left-[3rem]" 
                   />
-                  
-                  {/* 🚀 ใช้ span + whitespace-nowrap บังคับให้อยู่บรรทัดเดียวกันเสมอ */}
                   <span className="text-black absolute z-0 mt-[6px] ml-[8px]">HAPPY DAY</span>
                   <span className="text-white relative z-10" style={{ color: bgColorColor }}>HAPPY DAY</span>
                 </div>
@@ -271,7 +267,7 @@ export const DropArea = forwardRef<HTMLDivElement, DropAreaProps>(
                     width: image.width,
                     height: image.height,
                     zIndex: 20,
-                    pointerEvents: "none" // 🚀 4. เพิ่มคำสั่งนี้ กันสติ๊กเกอร์ซ้อนกันแล้วเมาส์ไปติดอันเก่า
+                    pointerEvents: "none"
                   }}
                 >
                   <Image 

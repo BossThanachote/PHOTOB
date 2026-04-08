@@ -8,7 +8,6 @@ import Image from "next/image";
 import { Modal, Button } from 'antd'; 
 import { useSnapshot } from "valtio";
 import state from "../valtio_config";
-import 'antd/dist/reset.css'; 
 
 // SVG Placeholder Icon สำหรับช่องที่ยังไม่เลือกรูป
 const ImageIcon = () => (
@@ -54,8 +53,6 @@ export default function Select() {
         // อัปเดตรูปที่เลือกลง valtio
         state.selectedImages = [...selectedImages];
         state.intro = 7; 
-        // 🚀 [TODO] เปลี่ยนหน้าไปหน้าถัดไป (เช่น หน้าตกแต่ง Custom หรือ Download)
-        // router.push('/booth/custom');
       }, 500); 
     }
   };
@@ -63,10 +60,8 @@ export default function Select() {
   const handleBack = () => {
     setIsVisible(false); 
     setTimeout(() => {
-      // 💡 Boss: การกดย้อนกลับไปหน้า Camera หมายถึงลบรูปทิ้งทั้งหมดแล้วถ่ายใหม่ใช่ไหมครับ?
       state.imageSrcs = [];  
       state.intro = 5; 
-      // router.push('/booth/camera');
     }, 500); 
   };
 

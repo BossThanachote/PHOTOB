@@ -9,17 +9,16 @@ import { Modal, Button } from 'antd';
 import { useSnapshot } from "valtio";
 import state from "@/app/valtio_config";
 import { supabase } from '@/app/lib/supabase';
-import { Loader2, Camera } from "lucide-react"; // เพิ่ม icon กล้อง
+import { Loader2, Camera } from "lucide-react"; 
 
-// 1. เพิ่ม cols และ rows เข้ามาใน Interface
 interface MachineFrame {
   id: string;
   frame?: string;
   image?: string;
   frameName?: string;
   shot: number;
-  cols: number; // <-- เพิ่ม
-  rows: number; // <-- เพิ่ม
+  cols: number; 
+  rows: number; 
   price: number; 
 }
 

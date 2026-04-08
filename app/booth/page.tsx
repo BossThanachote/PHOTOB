@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { BiSolidLeftArrow, BiSolidRightArrow } from "react-icons/bi";
-import { Settings, MonitorPlay, X } from "lucide-react"; // <-- เพิ่ม Icon สำหรับตั้งค่า
+import { Settings, MonitorPlay, X } from "lucide-react"; 
 import { useSnapshot } from "valtio";
 import state from "@/app/valtio_config";
-import { supabase } from '@/app/lib/supabase'; // <-- นำเข้า Supabase
+import { supabase } from '@/app/lib/supabase'; 
 
 const bounceRight = {
   hidden: { x: 10 },
@@ -72,7 +72,7 @@ export default function Main() {
   };
 
   const handleStartProcess = () => {
-    // ถ้ายังไม่ได้ตั้งค่าตู้ ไม่ให้ผ่าน
+
     if (!localStorage.getItem('active_booth_id')) {
       alert("กรุณาตั้งค่าเครื่อง Photobooth ก่อนใช้งาน (กดปุ่มฟันเฟืองมุมขวาบน)");
       return;
@@ -96,7 +96,7 @@ export default function Main() {
             className="w-screen h-screen bg-[#F7F7F7] flex justify-center items-center relative overflow-hidden cursor-pointer"
             onClick={handleStartProcess}
           >
-            {/* --- ปุ่มตั้งค่าลับ (Admin) --- */}
+            {/* --- ปุ่มตั้งค่าลับ -- */}
             <button 
               onClick={openSetup}
               className="absolute top-6 right-6 z-50 p-3 bg-white/50 backdrop-blur-md rounded-full shadow-sm text-gray-400 hover:text-[#9B1C27] hover:bg-white transition-all"
@@ -104,14 +104,14 @@ export default function Main() {
               <Settings size={24} />
             </button>
 
-            {/* โชว์ชื่อตู้มุมซ้ายบน (ถ้าตั้งค่าแล้ว) */}
+            {/* โชว์ชื่อตู้มุมซ้ายบน ( */}
             {activeBoothName && (
               <div className="absolute top-6 left-6 z-50 px-4 py-2 bg-black/10 backdrop-blur-sm rounded-full text-sm font-bold text-gray-500 pointer-events-none">
                 📍 {activeBoothName}
               </div>
             )}
 
-            {/* ส่วนเลือกภาษา (โค้ดเดิมของ Boss) */}
+            {/* ส่วนเลือกภาษา  */}
             <motion.div 
               className="w-[90%] h-[7rem] lg:h-[10rem] top-0 absolute z-20 flex items-center justify-end gap-3 pr-16" // เพิ่ม pr-16 หลบปุ่มตั้งค่า
               variants={fadeUpVariant}
@@ -130,7 +130,7 @@ export default function Main() {
             </motion.div>
           
             <div className="w-[50rem] h-full flex flex-col relative pointer-events-none">
-              {/* โลโก้ (โค้ดเดิม) */}
+              {/* โลโก้  */}
               <motion.div
                 className="w-full h-[20rem] flex justify-center items-center mt-[8rem] md:mt-[15rem] relative"
                 initial={{ y: -500, opacity: 0 }} 
@@ -161,7 +161,7 @@ export default function Main() {
                 </motion.p>
               </motion.div>
 
-              {/* ส่วน Touch Screen (กระพริบลูกศร โค้ดเดิม) */}
+              {/* ส่วน Touch Screen  */}
               <motion.div 
                 className="w-full h-full mt-[10rem] flex justify-center items-center mb-[20rem] lg:mb-[10rem]"
                 initial={{ y: 100, opacity: 0 }}

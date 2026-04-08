@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { useSnapshot } from "valtio";
-// ตรวจสอบ import path ของ valtio_config ให้ถูกกับโปรเจกต์ของ Boss นะครับ
 import state from "../valtio_config"; 
 
 // SVG สำหรับแสงแฟลชสีขาวเต็มหน้าจอ
@@ -35,7 +34,7 @@ export default function Selfie() {
     // เช็คว่าถ่ายรูปครบหรือยัง
     const isAllDone = currentStep > maxSteps;
 
-    // 1. useEffect: เปิด/ปิดกล้อง และเคลียร์ข้อมูลเมื่อเข้ามาหน้านี้
+    // เปิด/ปิดกล้อง และเคลียร์ข้อมูลเมื่อเข้ามาหน้านี้
     useEffect(() => {
         if (snap.intro === 5) {
             state.imageSrcs = []; // เคลียร์รูปเก่า
@@ -49,7 +48,7 @@ export default function Selfie() {
         return () => stopCamera();
     }, [snap.intro]);
 
-    // 2. useEffect: นับถอยหลัง 12 วินาที
+    // นับถอยหลัง 12 วินาที
     useEffect(() => {
         if (snap.intro !== 5 || isAllDone) return;
 
@@ -68,11 +67,11 @@ export default function Selfie() {
 
             // ขยับไป Step ถัดไป (ถ้าครบแล้วเดี๋ยว Effect ตัวล่างจะจัดการเอง)
             setCurrentStep((prev) => prev + 1);
-            setCountdown(12); // ตั้งเวลาใหม่รอไว้เลย
+            setCountdown(12); 
         }
     }, [countdown, snap.intro, isAllDone]);
 
-    // 🚀 3. useEffect (เพิ่มใหม่): จับตาดูตอนถ่ายรูปครบแล้วเปลี่ยนหน้า
+    //  จับตาดูตอนถ่ายรูปครบแล้วเปลี่ยนหน้า
     useEffect(() => {
         if (snap.intro === 5 && isAllDone) {
             console.log("All photos taken! Preparing transition...");
@@ -85,8 +84,6 @@ export default function Selfie() {
                 console.log("Transitioning to intro 6 (Select Photo)");
                 state.intro = 6;
                 localStorage.setItem('currentIntro', '6');
-                // หมายเหตุ: ไม่ต้องใช้ router.push เพราะเราน่าจะรวม Component ไว้หน้าเดียวกัน
-                // หรือถ้าแยกหน้ากันอยู่ Boss ต้องใส่ router.push('/booth/select') ตรงนี้ครับ
             }, 3000);
 
             return () => clearTimeout(finishTimer);
@@ -138,7 +135,7 @@ export default function Selfie() {
         }
     };
 
-    // ปุ่มสำหรับเทส ข้ามไปหน้าถัดไปทันที (ซ่อนอยู่มุมล่างขวาของช่องข้อมูล)
+    // ปุ่มสำหรับเทส ข้ามไปหน้าถัดไปทันที 
     const handleForceNext = () => {
         state.intro = 6;
         localStorage.setItem('currentIntro', '6');

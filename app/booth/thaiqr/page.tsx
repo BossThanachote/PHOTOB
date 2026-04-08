@@ -18,7 +18,7 @@ export default function ThaiQR() {
   const [isClient, setIsClient] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   
-  const [countdown, setCountdown] = useState(60); // 20 นาที
+  const [countdown, setCountdown] = useState(60); 
   const [isTimeout, setIsTimeout] = useState(false);
   
   // State สำหรับเก็บข้อมูลเฟรมที่ดึงมาจากรอบก่อนหน้า
@@ -26,7 +26,6 @@ export default function ThaiQR() {
 
   useEffect(() => {
     setIsClient(true);
-    // 💡 ThaiQR ใช้ intro = 11 (อ้างอิงจากหน้า Payment)
     state.intro = 11;
     localStorage.setItem('currentIntro', '11');
 
@@ -86,11 +85,10 @@ export default function ThaiQR() {
     }, 500);
   };
 
-  // 🚀 ปุ่ม Test Success เด้งไปหน้ากล้องเหมือน Alipay
   const simulatePaymentSuccess = () => {
     setIsVisible(false);
     setTimeout(() => {
-      state.intro = 5;  // 🚀 เปลี่ยนเป็น 5 เพื่อให้เข้าหน้า Selfie.tsx
+      state.intro = 5; 
       localStorage.setItem('currentIntro', '5');
       router.push(`/booth/camera`); 
     }, 500);
@@ -156,7 +154,7 @@ export default function ThaiQR() {
               </div>
             </div>
 
-            {/* Slip / QR Area (เปลี่ยนสี Header เป็นสีน้ำเงินเข้มแบบ PromptPay) */}
+            {/* Slip / QR Area  */}
             <div className="w-[90%] max-w-[30rem] lg:h-[40rem] bg-white border border-gray-200 rounded-3xl shadow-xl flex flex-col overflow-hidden">
               <div className="bg-[#113566] w-full py-4 flex justify-center items-center">
                  <p className="text-white font-inter-400 text-2xl font-bold tracking-wider">THAI QR PAYMENT</p>
@@ -186,7 +184,7 @@ export default function ThaiQR() {
               </div>
             </div>
 
-            {/* Countdown Desktop (แก้ Grid กึ่งกลางแล้ว) */}
+            {/* Countdown Desktop */}
             <div className="hidden lg:flex w-[20rem] justify-center items-center">
               <div className="w-[12.5rem] h-[12.5rem] bg-[#222222] rounded-full grid place-items-center shadow-2xl">
                 <p className="font-bebas-neue-400 text-white text-[4rem] leading-none text-center m-0 p-0 translate-x-[2px]">

@@ -13,7 +13,7 @@ import { Loader2 } from "lucide-react";
 
 
 
-// 1. แยก Animation ออกมาด้านนอก
+// แยก Animation ออกมาด้านนอก
 const shakeAnimation = {
   rotate: [0, -5, 5, -5, 5, 0], 
   transition: { duration: 0.5, repeat: Infinity, ease: "easeInOut", repeatDelay: 2 },
@@ -31,7 +31,7 @@ const fadeUpVariant = {
   exit: { y: -200, opacity: 0, transition: { duration: 0.3 } }
 };
 
-// 2. สร้าง Array ข้อมูล Payment เตรียมพร้อมสำหรับเชื่อม Database ในอนาคต
+// สร้าง Array ข้อมูล Payment 
 const PAYMENT_METHODS = [
   { id: 'THAIQR', src: '/THAIQR.png', alt: 'Thai QR', wrapperClass: 'bg-transparent', imgClass: 'w-full h-full' },
   { id: 'ALIPAY', src: '/ALIPAY.png', alt: 'Alipay', wrapperClass: 'bg-transparent', imgClass: 'w-full h-full' },

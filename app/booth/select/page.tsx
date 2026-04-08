@@ -133,7 +133,6 @@ export default function Select() {
           </div>
            
           {/* Main Content */}
-          {/* 🚀 แก้ items-center เป็น items-start และเพิ่ม pt-8 */}
           <div className="w-full flex-1 flex flex-col lg:flex-row items-start justify-center gap-8 lg:gap-16 xl:gap-32 pt-8 pb-20 px-4 overflow-y-auto">
             
             {/* ฝั่งซ้าย: กรอบรูป (Polaroid) */}

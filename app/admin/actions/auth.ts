@@ -1,6 +1,6 @@
 'use server'
 
-import { supabase } from '@/app/lib/supabase' // เปลี่ยนมาใช้ตัวเชื่อม Supabase
+import { supabase } from '@/app/lib/supabase' 
 import { cookies } from 'next/headers'
 
 export async function loginAction(formData: FormData) {
@@ -14,14 +14,14 @@ export async function loginAction(formData: FormData) {
       .select('*')
       .eq('email', email)
       .single()
-    console.log("🔍 ผลการค้นหา:", admin); // ดูค่าใน Terminal
-    console.log("❌ Error ถ้ามี:", error);
+    console.log("ผลการค้นหา:", admin); // ดูค่าใน Terminal
+    console.log("Error :", error);
 
     if (error || !admin) {
       return { success: false, message: 'ไม่พบอีเมลนี้ในระบบ' }
     }
 
-    // เช็ครหัสผ่าน (เทียบ Plain Text ตามข้อมูลที่ Boss มีใน DB)
+    // เช็ครหัสผ่าน (เทียบ Plain Text)
     if (admin.password === password) {
       const cookieStore = await cookies()
 

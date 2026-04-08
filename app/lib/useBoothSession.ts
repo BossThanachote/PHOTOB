@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-// สร้าง Type เพื่อให้ VS Code แนะนำโค้ดอัตโนมัติ (IntelliSense)
 export interface BoothSessionData {
   machineId: string;
   frame: {
@@ -26,7 +25,7 @@ export function useBoothSession() {
     const machineId = localStorage.getItem('active_booth_id')
     const frameStr = localStorage.getItem('selectedFrame')
 
-    // ถ้าดึงข้อมูลมาแล้วไม่เจอ แปลว่าลูกค้าอาจจะข้ามขั้นตอนมา ให้เตะกลับไปหน้าแรก!
+    // ถ้าดึงข้อมูลมาแล้วไม่เจอ แปลว่าลูกค้าอาจจะข้ามขั้นตอนมา 
     if (!machineId || !frameStr) {
       alert("ไม่พบข้อมูลเซสชัน! กรุณาเริ่มทำรายการใหม่")
       router.push('/booth')

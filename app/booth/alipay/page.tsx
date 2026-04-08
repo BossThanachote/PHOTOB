@@ -86,8 +86,7 @@ export default function Alipay() {
     }, 500);
   };
 
-  // 🚀 [TODO: Database] สมมติว่านี่คือฟังก์ชันจำลองเมื่อลูกค้าจ่ายเงินสำเร็จ
-  // ในระบบจริง เราจะต้องคอยยิง API เช็คสถานะ (Polling) หรือรับ Webhook จาก Alipay
+  // ฟังก์ชันจำลองเมื่อลูกค้าจ่ายเงินสำเร็จ
   const simulatePaymentSuccess = () => {
     setIsVisible(false);
     setTimeout(() => {
