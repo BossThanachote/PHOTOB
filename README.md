@@ -35,6 +35,6 @@
 [![My Skills](https://skillicons.dev/icons?i=react,supabase)](https://skillicons.dev)
 <hr>
 
-*link to website* : https://photobooth.vercel.app/
+*link to website* : https://photob-1vsa.vercel.app/booth
 
 ## Deploy on Vercel
