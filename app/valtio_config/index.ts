@@ -1,8 +1,6 @@
 import { proxy, subscribe } from "valtio";  
 import { colors as mockColors } from '../MockAPI/MockFrameColor';
 import { colorsBorder as mockColorsBorder } from "../MockAPI/MockBorderColor";
-import { filter } from "framer-motion/client";
-import { colorsBorder } from "../MockAPI/MockBorderColor";
 
 interface DropItem {
    id: number;

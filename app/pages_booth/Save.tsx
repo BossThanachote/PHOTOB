@@ -76,7 +76,7 @@ export default function Save(){
     
     const handleSavePhoto = () => {
         if (snap.savedDropAreaImage) {
-            const link = document.createElement('a'); // สร้าง element ลิงก์
+            const link = document.createElement('a'); 
             link.href = snap.savedDropAreaImage; // ตั้งค่า href เป็น URL ของภาพ
             link.download = 'saved-photo.png'; // ตั้งชื่อไฟล์ที่ต้องการดาวน์โหลด
             link.click(); // จำลองการคลิกเพื่อลดาวน์โหลด

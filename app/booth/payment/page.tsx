@@ -71,7 +71,7 @@ export default function Payment() {
 
     setIsVisible(false);
     
-    // 3. ลด Switch Case ลง ใช้ Dynamic Routing แทน
+    // Dynamic Routing แทน
     setTimeout(() => {
       // อัปเดต state ตามประเภทที่เลือก
       const introMap: Record<string, number> = { 'THAIQR': 11, 'ALIPAY': 12, 'COUPON': 13 };
