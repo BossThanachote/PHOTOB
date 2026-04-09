@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     siteName: "Happy Day Photobooth",
     images: [
       {
-        url: "/og-image.png", 
+        url: "/og-image.jpg", 
         width: 1200,
         height: 630,
         alt: "Happy Day Photobooth Preview",
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Happy Day Photobooth 📸",
     description: "สนุกกับการถ่ายรูปและตกแต่งด้วยสติ๊กเกอร์น่ารักๆ",
-    images: ["/og-image.png"],
+    images: ["/og-image.jpg"],
   },
 };
 
